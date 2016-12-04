@@ -3,12 +3,17 @@
 #include <glfw3.h>
 #include <iostream>
 #include <soil.h>
+#include <stdio.h>
 #include "shader.h"
 
 
-const GLuint WIDTH = 800 , HEIGHT = 600;
-float mixRatio = 0.2f;
 
+const GLuint WIDTH = 800 , HEIGHT = 600;
+const float increaseRate = 0.01f;
+float mixRatio = 0.2f;
+bool repeatKeyUp = false;
+bool repeatKeyDown = false;
+float rate = 0.0f;
 //key_callback function to use the escape key to set the window to close
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
@@ -16,10 +21,30 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	// closing the application
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
-	else if (key == GLFW_KEY_UP && action == GLFW_PRESS)
-		mixRatio += 0.025f;
-	else if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
-		if (mixRatio >= 0.025f) mixRatio -= 0.025f; 
+	else if (key == GLFW_KEY_UP &&  action == GLFW_PRESS)
+	{
+		repeatKeyUp = true;
+		rate = 0.0f;
+		if(mixRatio + increaseRate <= 1.0f) mixRatio += increaseRate;
+		/*
+		//printf("up key\n");
+		if(mixRatio + increaseRate <= 1.0f) mixRatio += increaseRate;
+		*/
+	}
+	else if (key == GLFW_KEY_UP && (action == GLFW_RELEASE))
+	{
+		repeatKeyUp = false;
+	}
+	else if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
+	{
+		repeatKeyDown = true;
+		//printf("down key\n");
+		if (mixRatio -increaseRate >= 0.0f) mixRatio -= increaseRate; 
+	}
+	else if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE)
+	{
+		repeatKeyDown = false;
+	}
 }
 
 int main () 
@@ -162,10 +187,21 @@ int main ()
 	/*----------------
 	 * MAIN GAME LOOP
 	 * --------------*/
-
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
+		rate += 0.02f;
+		if (repeatKeyUp && rate>=3.0f )
+		{
+			rate = 0.0f;
+			if(mixRatio + increaseRate <= 1.0f) mixRatio += increaseRate;
+		}
+
+		else if (repeatKeyDown && rate>=3.0f )
+		{
+			rate = 0.0f;
+			if (mixRatio - increaseRate >= 0.0f) mixRatio -= increaseRate; 
+		}
 
 		//clear the color of the buffer to blue-ish
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
