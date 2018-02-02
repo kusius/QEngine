@@ -21,9 +21,9 @@ class Shader
 			std::string fragmentCode;
 			std::ifstream vShaderFile;
 			std::ifstream fShaderFile;
-			// ensures ifstream objects can throw exceptions:
-			vShaderFile.exceptions (std::ifstream::badbit);
-			fShaderFile.exceptions (std::ifstream::badbit);
+			// set which exceptions to throw for ifstream:
+			vShaderFile.exceptions (std::ifstream::badbit | std::ifstream::failbit);
+			fShaderFile.exceptions (std::ifstream::badbit | std::ifstream::failbit);
 			try
 			{
 				// Open files
@@ -44,6 +44,7 @@ class Shader
 			{
 				std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
 			}
+
 			const GLchar* vShaderCode = vertexCode.c_str();
 			const GLchar * fShaderCode = fragmentCode.c_str();
 			// 2. Compile shaders

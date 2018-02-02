@@ -47,7 +47,7 @@ int main ()
 	 * SHADERS
 	 * --------------*/
 
-	Shader shader("C:/OpenGL/learnopengl/shaders/shader.vs", "C:/OpenGL/learnopengl/shaders/shader.frag");
+	Shader shader("D:/git/learnopengl/shaders/shader.vs", "D:/git/learnopengl/shaders/shader.frag");
 
 	int width, height; 
 
