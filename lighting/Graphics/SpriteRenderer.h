@@ -18,9 +18,12 @@ public:
 	~Renderer();
 	//Renders a defined quad textured with given sprite
 	void DrawSprite(Texture2D &texture, glm::vec3 translation = glm::vec3(0.0f) ,
-		glm::vec2 scale = glm::vec2(1.0f, 1.0f), GLfloat rotation = 0.0f,
+		glm::vec2 scale = glm::vec3(1.0f, 1.0f, 1.0f), GLfloat rotation = 0.0f,
 		glm::vec3 color = glm::vec3(1.0f));
 
+	void DrawSprite(glm::vec3 translation = glm::vec3(0.0f),
+		glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f), GLfloat rotation = 0.0f,
+		glm::vec3 color = glm::vec3(1.0f));
 	void DrawSprite(Texture2D & texture);
 
 
