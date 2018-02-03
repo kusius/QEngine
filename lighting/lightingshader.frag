@@ -3,9 +3,9 @@
 struct Material 
 {
 	//3 types of colors
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
+	sampler2D diffuse;//diffuse map (texture)
+	sampler2D specular;
+	sampler2D emission;
 	//a shininess value
 	float shininess;
 };
@@ -23,6 +23,7 @@ struct Light
 
 in vec3 Normal;
 in vec3 FragPos;
+in vec2 TexCoords;
 
 out vec4 color;
 
@@ -41,7 +42,7 @@ void main()
 {
 	//ambient light calculation
 	
-	vec3 ambient =  light.ambient * material.ambient;
+	vec3 ambient =  light.ambient * vec3(texture(material.diffuse, TexCoords));
 
 	//diffuse light calculation
 	vec3 norm = normalize(Normal);
@@ -51,7 +52,7 @@ void main()
 	//use max function to avoid values greater than 90 degrees
 	float diff = max(dot(norm, lightDirection), 0.0); 
 
-	vec3 diffuse = light.diffuse *  (diff * material.diffuse) ;
+	vec3 diffuse = light.diffuse *  (diff * vec3(texture(material.diffuse, TexCoords))) ;
 
 
 	//specular
@@ -59,10 +60,12 @@ void main()
 	vec3 viewDirection = normalize(viewPos - FragPos);
 	vec3 reflectDirection = reflect(-lightDirection, norm);
 	float spec = pow(max(dot(viewDirection, reflectDirection), 0.0), material.shininess);//the power raised is the shininess
-	vec3 specular = light.specular * (spec * material.specular);  
+	vec3 specular = light.specular * (spec * vec3(texture(material.specular, TexCoords)));  
 
+	//emission
+	//vec3 emission = vec3(texture(material.emission, TexCoords));
 
-	vec3 result =  ambient + diffuse + specular   ;
+	vec3 result =  ambient + diffuse + specular ;
 
 
 

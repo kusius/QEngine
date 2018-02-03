@@ -86,26 +86,42 @@ int main(int argc, char** argv)
 	//Make our shaders (read, compile, link)
 	ResourceManager::LoadShader("shader.vert", "lightingshader.frag", nullptr, "shader");
 	ResourceManager::LoadShader("lampshader.vert", "lampshader.frag", nullptr, "lampshader");
-	ResourceManager::LoadTexture("container.jpg", GL_FALSE, "container");
+	ResourceManager::LoadTexture("container2.png", GL_FALSE, "container");
+	ResourceManager::LoadTexture("container2_specular.png", GL_FALSE, "container_specular");
+	ResourceManager::LoadTexture("matrix.jpg", GL_FALSE, "container_emission");
+
+
+
+	//Keep the texture handy
+	Texture2D diffuseMap = ResourceManager::GetTexture("container");
+	Texture2D specularMap = ResourceManager::GetTexture("container_specular");
+	Texture2D emissionMap = ResourceManager::GetTexture("container_emission");
 
 	//3D set info to shader
 	Shader shader = ResourceManager::GetShader("shader");
 	Shader lightShader = ResourceManager::GetShader("lampshader");
+
+	//Set positioning uniforms
 	//shader.SetMatrix4("model", model, GL_TRUE); //YOU NEED TO ACTIVATE SHADER
 	shader.SetMatrix4("view", view, GL_TRUE);   //YOU NEED TO ACTIVATE SHADER
-	shader.SetVector3f("lightColor", glm::vec3(1.0f, 1.0f, 1.0f), GL_TRUE);
 	shader.SetMatrix4("projection", projection);
-	shader.SetVector3f("material.ambient", 0.2125f,	0.1275f,	0.054f);
-	shader.SetVector3f("material.diffuse", 0.714f,	0.4284f,	0.18144f);
-	shader.SetVector3f("material.specular", 0.393548f,	0.271906f,	0.166721f);
-	shader.SetFloat("material.shininess", 25.6f);
+	//Set lighting uniforms
+	shader.SetVector3f("lightColor", glm::vec3(1.0f, 1.0f, 1.0f), GL_TRUE);
+	shader.SetVector3f("material.specular", 1.0f, 1.0f, 1.0f);
+	shader.SetFloat("material.shininess", 32.0f);
+	//Set the second texture unit (specular map)
+	//Note: the diffuse map is also a texture unit but its the default (=0)so no need to set explicitly
+	shader.SetInteger("material.specular", 1);
+	shader.SetInteger("material.emission", 2);
+	
 
-	shader.SetVector3f("light.ambient", glm::vec3(1.0f)); //a dark ambient
-	shader.SetVector3f("light.diffuse", glm::vec3(1.0f)); //darken the light a bit 
+	//Set light ads values
+	shader.SetVector3f("light.ambient", glm::vec3(0.2f)); //a dark ambient
+	shader.SetVector3f("light.diffuse", glm::vec3(0.5f)); //darken the light a bit 
 	shader.SetVector3f("light.specular", glm::vec3(1.0f)); //full white
 
 
-
+	//Position the light
 	lightShader.SetMatrix4("view", view, GL_TRUE);   //YOU NEED TO ACTIVATE SHADER
 	lightShader.SetMatrix4("projection", projection);
 	
@@ -166,7 +182,7 @@ int main(int argc, char** argv)
 		lightShader.SetMatrix4("view", view, GL_TRUE);
 		lightShader.SetMatrix4("projection", projection);
 			
-		renderer->DrawSprite(glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, glm::vec3(1.0f, 0.5f, 0.31f));
+		renderer->DrawSprite(diffuseMap, specularMap, emissionMap, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, glm::vec3(1.0f, 0.5f, 0.31f));
 
 
 	
