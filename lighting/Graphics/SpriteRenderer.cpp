@@ -118,7 +118,7 @@ void Renderer::initRenderData()
 	glBindVertexArray(0);
 
 }
-void Renderer::DrawSprite(Texture2D & diffuseMap, Texture2D & specularMap, Texture2D & emissionMap, glm::vec3 translation, glm::vec2 scale, GLfloat rotation, glm::vec3 color)
+void Renderer::DrawSprite(Texture2D & diffuseMap, Texture2D & specularMap, Texture2D & emissionMap, glm::vec3 translation, glm::vec2 scale, GLfloat rotation)
 {
 	//perform translations
 	glm::mat4 transform = glm::mat4(1.0f);

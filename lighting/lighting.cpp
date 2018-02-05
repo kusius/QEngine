@@ -2,6 +2,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <string>
 
 #include "Camera.h"
 #include "ResourceManager.h"
@@ -84,8 +85,8 @@ int main(int argc, char** argv)
 	
 
 	//Make our shaders (read, compile, link)
-	ResourceManager::LoadShader("shader.vert", "lightingshader.frag", nullptr, "shader");
-	ResourceManager::LoadShader("lampshader.vert", "lampshader.frag", nullptr, "lampshader");
+	ResourceManager::LoadShader("Shaders/shader.vert", "Shaders/lightingshader.frag", nullptr, "shader");
+	ResourceManager::LoadShader("Shaders/lampshader.vert", "Shaders/lampshader.frag", nullptr, "lampshader");
 	ResourceManager::LoadTexture("container2.png", GL_FALSE, "container");
 	ResourceManager::LoadTexture("container2_specular.png", GL_FALSE, "container_specular");
 	ResourceManager::LoadTexture("matrix.jpg", GL_FALSE, "container_emission");
@@ -105,20 +106,72 @@ int main(int argc, char** argv)
 	//shader.SetMatrix4("model", model, GL_TRUE); //YOU NEED TO ACTIVATE SHADER
 	shader.SetMatrix4("view", view, GL_TRUE);   //YOU NEED TO ACTIVATE SHADER
 	shader.SetMatrix4("projection", projection);
-	//Set lighting uniforms
-	shader.SetVector3f("lightColor", glm::vec3(1.0f, 1.0f, 1.0f), GL_TRUE);
-	shader.SetVector3f("material.specular", 1.0f, 1.0f, 1.0f);
-	shader.SetFloat("material.shininess", 32.0f);
+	
+	
+	/************************
+	**********MATERIAL*******
+	**************************/
+
+
 	//Set the second texture unit (specular map)
 	//Note: the diffuse map is also a texture unit but its the default (=0)so no need to set explicitly
 	shader.SetInteger("material.specular", 1);
 	shader.SetInteger("material.emission", 2);
+	//set the shininess
+	shader.SetFloat("material.shininess", 32.0f);
 	
+	/************************
+	**********LIGHTS*********
+	**************************/
 
-	//Set light ads values
-	shader.SetVector3f("light.ambient", glm::vec3(0.2f)); //a dark ambient
-	shader.SetVector3f("light.diffuse", glm::vec3(0.5f)); //darken the light a bit 
-	shader.SetVector3f("light.specular", glm::vec3(1.0f)); //full white
+
+	//******** DIRECTIONAL LIGHT ************
+	shader.SetVector3f("dirLight.direction", -0.2f, -1.0f, -0.3f);
+	shader.SetVector3f("dirLight.ambient", glm::vec3(0.1f)); //a dark ambient
+	shader.SetVector3f("dirLight.diffuse", glm::vec3(0.5f)); //darken the light a bit 
+	shader.SetVector3f("dirLight.specular", glm::vec3(1.0f)); //full white
+
+
+	//************* POINT LIGHT(S) **************
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.7f,  0.2f,  2.0f),
+		glm::vec3(2.3f, -3.3f, -4.0f),
+		glm::vec3(-4.0f,  2.0f, -12.0f),
+		glm::vec3(0.0f,  0.0f, -3.0f)
+	};
+
+	for (unsigned int i = 0; i < 4; i++)
+	{
+		std::string number = std::to_string(i);
+		
+
+		shader.SetVector3f( ("pointLights[" + number + "].position").c_str(), pointLightPositions[i]);
+		shader.SetVector3f(("pointLights[" + number + "].ambient").c_str(), glm::vec3(0.1f));
+		shader.SetVector3f(("pointLights[" + number + "].diffuse").c_str(), glm::vec3(0.5f));
+		shader.SetVector3f(("pointLights[" + number + "].specular").c_str(), glm::vec3(1.0f));
+		shader.SetFloat(("pointLights[" + number + "].constant").c_str(), 1.0f);
+		shader.SetFloat(("pointLights[" + number + "].linear").c_str(), 0.09f);
+		shader.SetFloat(("pointLights[" + number + "].quadratic").c_str(), 0.032f);
+	}
+
+	//shader.SetFloat("light.constant",1.0f);
+	//shader.SetFloat("light.lifnear",0.09f);
+	//shader.SetFloat("light.quadratic", 0.032f);
+
+
+
+
+
+
+	//***************** SPOTLIGHT ****************
+	//direction and position set in the render loop
+	shader.SetVector3f("spotLight.ambient", glm::vec3(0.1f)); //a dark ambient
+	shader.SetVector3f("spotLight.diffuse", glm::vec3(0.5f)); //darken the light a bit 
+	shader.SetVector3f("spotLight.specular", glm::vec3(1.0f)); //full white
+	shader.SetFloat("spotLight.cutoff", glm::cos(glm::radians(12.5f)));
+	shader.SetFloat("spotLight.outercutoff", glm::cos(glm::radians(17.5f)));
+
+
 
 
 	//Position the light
@@ -142,9 +195,24 @@ int main(int argc, char** argv)
 	float lastFrame = 0.0f;
 
 	float lightDistance = glm::distance(glm::vec3(0.0f), lightPos);
-	std::cout << lightDistance << std::endl;
+	
 
 	glm::vec3 lightColor;
+
+	glm::vec3 cubePositions[] = {
+		glm::vec3(0.0f,  0.0f,  0.0f),
+		glm::vec3(2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3(2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3(1.3f, -2.0f, -2.5f),
+		glm::vec3(1.5f,  2.0f, -2.5f),
+		glm::vec3(1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
+
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -173,20 +241,34 @@ int main(int argc, char** argv)
 
 
 		shader.Use();
-		shader.SetVector3f("viewPos", camera.Position);
-		shader.SetVector3f("lightPos", lightPos);
+		//Rest of spotlight setup (move with camera) 
+		shader.SetVector3f("spotLight.position", camera.Position);
+		shader.SetVector3f("spotLight.direction", camera.Front);
+
+		
+		shader.SetVector3f("viewPos", camera.Position);//for the directional light
+
+		//VERTEX SHADER UNIFORMS
 		shader.SetMatrix4("view", view);
 		shader.SetMatrix4("projection", projection);
 
-
-		lightShader.SetMatrix4("view", view, GL_TRUE);
+		//DIRECTIONAL LIGHT VERTEX SHADER UNIFORMS
+		lightShader.Use();
+		lightShader.SetMatrix4("view", view);
 		lightShader.SetMatrix4("projection", projection);
 			
-		renderer->DrawSprite(diffuseMap, specularMap, emissionMap, glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, glm::vec3(1.0f, 0.5f, 0.31f));
+
+		for (unsigned int i = 0; i < 10; i++)
+		{
+			float angle = 20.0f;
+			renderer->DrawSprite(diffuseMap, specularMap, emissionMap, cubePositions[i], glm::vec3(1.0f), glm::radians(angle * i));
+		}
 
 
-	
-		lightRenderer->DrawSprite(lightPos, glm::vec3(0.2f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+		for (unsigned int i = 0; i < 4; i++)
+		{
+			lightRenderer->DrawSprite(pointLightPositions[i], glm::vec3(0.2f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
+		}
 		
 
 
