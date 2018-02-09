@@ -7,7 +7,7 @@
 #include "Camera.h"
 #include "ResourceManager.h"
 #include "Graphics/SpriteRenderer.h"
-#include "Graphics/Model.h"
+#include "Objects/Entity.h"
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
@@ -69,9 +69,9 @@ int main(int argc, char** argv)
 	//OpenGL configuration
 	//glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 	//glEnable(GL_CULL_FACE);
-	//glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	//3D 
 	//glm::mat4 model = glm::mat4(1);
@@ -166,8 +166,13 @@ int main(int argc, char** argv)
 	/************************
 	**********MODEL*********
 	**************************/
-	Model naruto("Models/lu/scene.gltf");
-	Model nanosuit("Models/bunny/untitled.obj");
+	Entity ftm("Models/crypt_location/12.obj");
+	ftm.SetView(view);
+	ftm.SetProjection(projection);
+	//ftm.Scale(glm::vec3(0.002f, 0.002f, 0.002f));
+
+	//Model naruto("Models/lu/scene.gltf");
+	//Model nanosuit("Models/bunny/untitled.obj");
 	//Model moxxi("Models/moxxi/Moxxi.obj");
 	//Model puss("Models/puss/puss.obj");
 
@@ -215,28 +220,35 @@ int main(int argc, char** argv)
 		
 		shader.SetVector3f("viewPos", camera.Position);//for the directional light
 
+
+
+		ftm.SetView(view);
+		ftm.SetProjection(projection);
+		ftm.Draw(shader);
+
+
 		//VERTEX SHADER UNIFORMS
-		glm::mat4 model;
-		model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
-		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		//model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
-		//model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-		shader.SetMatrix4("model", model);
-		shader.SetMatrix4("view", view);
-		shader.SetMatrix4("projection", projection);
+		//glm::mat4 model;
+		//model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+		//model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		////model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
+		////model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+		//shader.SetMatrix4("model", model);
+		//shader.SetMatrix4("view", view);
+		//shader.SetMatrix4("projection", projection);
 
 
-		naruto.Draw(shader);
-		
+		//naruto.Draw(shader);
+		//
 
-		model = glm::mat4(1);
-		model = glm::translate(model, glm::vec3(2.0f, -1.75f, 0.0f));
-		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(7.2f, 7.2f, 7.2f));
-		shader.SetMatrix4("model", model);
-		shader.SetMatrix4("view", view);
-		shader.SetMatrix4("projection", projection);
-		nanosuit.Draw(shader);
+		//model = glm::mat4(1);
+		//model = glm::translate(model, glm::vec3(2.0f, -1.75f, 0.0f));
+		//model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		//model = glm::scale(model, glm::vec3(7.2f, 7.2f, 7.2f));
+		//shader.SetMatrix4("model", model);
+		//shader.SetMatrix4("view", view);
+		//shader.SetMatrix4("projection", projection);
+		//nanosuit.Draw(shader);
 
 
 

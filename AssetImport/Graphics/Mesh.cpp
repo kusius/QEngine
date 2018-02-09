@@ -42,7 +42,7 @@ void Mesh::Draw(Shader shader)
 {
 	unsigned int diffuseNr = 1;
 	unsigned int specularNr = 1;
-
+	unsigned int emissionNr = 1;
 	//bind all the appropriate textures
 	//note that we have a naming convention:
 	//spexcular texture 1 is named: texure_specular1 
@@ -56,6 +56,9 @@ void Mesh::Draw(Shader shader)
 			number = std::to_string(diffuseNr++);
 		else if (name == "texture_specular")
 			number = std::to_string(specularNr++);
+		else if (name == "texture_emission")
+			name = std::to_string(emissionNr++);
+
 		
 		shader.Use();
 		shader.SetInteger(("material." + name + number).c_str(), i);

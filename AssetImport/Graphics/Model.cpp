@@ -91,7 +91,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 			indices.push_back(face.mIndices[j]);
 	}
 
-	//Process material (Textures: diffuse, specular maps) 
+	//Process material (Textures: diffuse, specular, emission maps) 
 	if (mesh->mMaterialIndex >= 0)
 	{
 		aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
@@ -103,6 +103,13 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 		vector<Texture> specularMaps = loadMaterialTextures(material,
 			aiTextureType_SPECULAR, "texture_specular");
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+
+
+		vector<Texture> emissionMaps = loadMaterialTextures(material,
+			aiTextureType_EMISSIVE, "texture_emission");
+		textures.insert(textures.end(), emissionMaps.begin(), emissionMaps.end());
+
+
 	}
 
 	return Mesh(vertices, indices, textures);
@@ -132,8 +139,11 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
 			texture.type = typeName;
 			texture.path = str.C_Str();
 			textures.push_back(texture);
+			textures_loaded.push_back(texture);
 		}
 	}
+
+	
 	return textures;
 }
 
@@ -145,13 +155,13 @@ unsigned int Model::loadTextureFromFile(const char *file, const string &director
 
 	int width, height, bpp;
 	string sFile = string(file);
-	//string path = directory + '/' + file;
-	//cout << "LOAD::TEXTURE::INFO: Loading texture " << path << endl;
+	string path = directory + '/' + file;
+	cout << "LOAD::TEXTURE::INFO: Loading texture " << path << endl;
 	unsigned char* image = stbi_load((directory + '/' + file).c_str(), &width, &height, &bpp, 0);
 
 	if (!image)
 	{
-		cout << "LOAD_TEXTURE::FAILED: " << stbi_failure_reason << endl;
+		cout << "LOAD_TEXTURE::FAILED: " << stbi_failure_reason() << " "  << path << endl;
 		stbi_image_free(image);
 		return id;
 	}
