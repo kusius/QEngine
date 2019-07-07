@@ -2,8 +2,7 @@
 #define TEXTURE_H
 
 
-#include <GL/glew.h>
-
+#include <glad/glad.h>
 class Texture2D
 {
 public:

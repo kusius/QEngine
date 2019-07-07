@@ -7,7 +7,7 @@
 #include <vector>
 
 #include <GLM/glm.hpp>
-#include <GL/glew.h>
+#include <glad/glad.h>
 
 #include "Shader.h"
 

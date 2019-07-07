@@ -1,8 +1,8 @@
-#define GLEW_STATIC
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
 #include <iostream>
 #include <string>
+
+#include <GLAD/glad.h>
+#include <GLFW/glfw3.h>
 
 #include "Camera.h"
 #include "ResourceManager.h"
@@ -49,10 +49,11 @@ int main(int argc, char** argv)
 	glfwMakeContextCurrent(window);
 
 
-
-	glewExperimental = GL_TRUE;
-	glewInit();
-	glGetError(); // Call it once to catch glewInit() bug, all other errors are now from our application.
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		std::cout << "Failed to init GLAD" << std::endl;
+		return -1;
+	}
 
 	//glfw set 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -83,7 +84,13 @@ int main(int argc, char** argv)
 
 	
 
-	
+	ResourceManager::LoadTexture("container2.png", GL_FALSE, "container");
+	ResourceManager::LoadTexture("container2_specular.png", GL_FALSE, "container_specular");
+	ResourceManager::LoadTexture("matrix.jpg", GL_FALSE, "container_emission");
+	Texture2D diffusemap = ResourceManager::GetTexture("container");
+	Texture2D specularmap = ResourceManager::GetTexture("container_specular");
+	Texture2D emissionmap = ResourceManager::GetTexture("container_emission");
+
 
 	//Make our shaders (read, compile, link)
 	ResourceManager::LoadShader("Shaders/shader.vert", "Shaders/lightingshader.frag", nullptr, "shader");
@@ -102,6 +109,18 @@ int main(int argc, char** argv)
 	shader.SetMatrix4("projection", projection);
 	
 	
+	/************************
+	**********MATERIAL*******
+	**************************/
+
+
+	//Set the second texture unit (specular map)
+	//Note: the diffuse map is also a texture unit but its the default (=0)so no need to set explicitly
+	shader.SetInteger("material.diffuse", 0);
+	//shader.SetInteger("material.specular", 1);
+	//shader.SetInteger("material.emission", 2);
+	//set the shininess
+	shader.SetFloat("material.shininess", 100.0f);
 	
 	/************************
 	**********LIGHTS*********
@@ -166,9 +185,9 @@ int main(int argc, char** argv)
 	/************************
 	**********MODEL*********
 	**************************/
-	Entity ftm("Models/crypt_location/12.obj");
-	ftm.SetView(view);
-	ftm.SetProjection(projection);
+	//Entity ftm("Models/crypt_location/12.obj");
+	//ftm.SetView(view);
+	//ftm.SetProjection(projection);
 	//ftm.Scale(glm::vec3(0.002f, 0.002f, 0.002f));
 
 	//Model naruto("Models/lu/scene.gltf");
@@ -176,9 +195,9 @@ int main(int argc, char** argv)
 	//Model moxxi("Models/moxxi/Moxxi.obj");
 	//Model puss("Models/puss/puss.obj");
 
-
 	//Init all render data
-	Renderer  *lightRenderer;
+	Renderer  *renderer, *lightRenderer;
+	renderer = new Renderer(shader);
 	lightRenderer = new Renderer(lightShader);
 
 	//wireframe mode
@@ -222,57 +241,27 @@ int main(int argc, char** argv)
 
 
 
-		ftm.SetView(view);
-		ftm.SetProjection(projection);
-		ftm.Draw(shader);
+		//ftm.SetView(view);
+		//ftm.SetProjection(projection);
+		//ftm.Draw(shader);
 
 
 		//VERTEX SHADER UNIFORMS
-		//glm::mat4 model;
-		//model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
-		//model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		////model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
-		////model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-		//shader.SetMatrix4("model", model);
-		//shader.SetMatrix4("view", view);
-		//shader.SetMatrix4("projection", projection);
+		/*glm::mat4 model;
+		model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f));
+		model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
+		model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
+		shader.SetMatrix4("model", model);
+		shader.Use();
+		shader.SetMatrix4("view", view);
+		shader.SetMatrix4("projection", projection);
+		*/
 
 
-		//naruto.Draw(shader);
-		//
-
-		//model = glm::mat4(1);
-		//model = glm::translate(model, glm::vec3(2.0f, -1.75f, 0.0f));
-		//model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		//model = glm::scale(model, glm::vec3(7.2f, 7.2f, 7.2f));
-		//shader.SetMatrix4("model", model);
-		//shader.SetMatrix4("view", view);
-		//shader.SetMatrix4("projection", projection);
-		//nanosuit.Draw(shader);
-
-
-
-
-		//model = glm::mat4(1);
-		//model = glm::translate(model, glm::vec3(0.0f, -1.75f, 2.0f));
-		//model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		//model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
-		//shader.SetMatrix4("model", model);
-		//shader.SetMatrix4("view", view);
-		//shader.SetMatrix4("projection", projection);
-		//moxxi.Draw(shader);
-		//
-
-		//model = glm::mat4(1);
-		//model = glm::translate(model, glm::vec3(0.0f, -1.75f, -2.0f));
-		////model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		////model = glm::scale(model, glm::vec3(0.02f, 0.02f, 0.02f));
-		//shader.SetMatrix4("model", model);
-		//shader.SetMatrix4("view", view);
-		//shader.SetMatrix4("projection", projection);
-		//puss.Draw(shader);
-
-
+		shader.Use();
+		shader.SetMatrix4("view", view);
+		shader.SetMatrix4("projection", projection);
 
 		//DIRECTIONAL LIGHT VERTEX SHADER UNIFORMS
 		lightShader.Use();
@@ -283,14 +272,15 @@ int main(int argc, char** argv)
 
 	
 
-		for (unsigned int i = 0; i < 2; i++)
+		for (unsigned int i = 0; i < 4; i++)
 		{
 			lightRenderer->DrawSprite(pointLightPositions[i], glm::vec3(0.2f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
 		}
 		
 
 
-		//Renderer->DrawSprite(ResourceManager::GetTexture("container"));
+		renderer->DrawSprite(diffusemap, specularmap, emissionmap, glm::vec3(0.0f), glm::vec2(1.0f), 0.0f);
+		//renderer->DrawSprite(glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, glm::vec3(204.0f, 0.0f, 102.0f));
 
 
 		glfwSwapBuffers(window);

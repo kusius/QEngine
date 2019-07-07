@@ -2,8 +2,7 @@
 #define SHADER_H
 
 #include <string>
-#define GLEW_STATIC
-#include <GL/glew.h>
+#include <glad/glad.h>
 #include <GLM/glm.hpp>
 #include <GLM/gtc/type_ptr.hpp>
 

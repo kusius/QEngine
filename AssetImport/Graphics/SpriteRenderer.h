@@ -1,7 +1,7 @@
 #ifndef SPRITE_RENDERER_H
 #define SPRITE_RENDERER_H
 
-#include <GL/glew.h>
+#include <glad/glad.h>
 
 #include <GLM/glm.hpp>
 #include <GLM/gtc/matrix_transform.hpp>

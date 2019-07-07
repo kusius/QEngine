@@ -149,8 +149,8 @@ void Renderer::DrawSprite(Texture2D & diffuseMap, Texture2D & specularMap, Textu
 	glBindVertexArray(0);
 }
 
-void Renderer::DrawSprite(glm::vec3 translation ,
-	glm::vec3 scale , GLfloat rotation,
+void Renderer::DrawSprite(glm::vec3 translation,
+	glm::vec3 scale, GLfloat rotation,
 	glm::vec3 color)
 {
 	//perform translations
