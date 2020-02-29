@@ -21,6 +21,7 @@ void main()
 	//must apply the normal matrix transform (the inverse and transpose of the model and NOT the model itself)
 	//also cast to mat3 to ensure the translation properties are lost 
 	//inverse is VERY COSTLY!!! Do it in the cpu and pass it as uniform
+	//TODO: Multiply trick for transpose inverse
 	Normal = mat3(transpose(inverse(model))) * aNormal ;
 
 	TexCoords = aTexCoords;

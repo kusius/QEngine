@@ -58,7 +58,7 @@ out vec4 color;
 
 //Input from program (uniforms)
 uniform DirLight dirLight;
-#define NR_POINT_LIGHTS 2
+#define NR_POINT_LIGHTS 4
 uniform PointLight pointLights[NR_POINT_LIGHTS];
 uniform SpotLight spotLight;
 uniform vec3 viewPos;
@@ -73,7 +73,8 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 FragPos, vec3 viewDir);
 
 void main()
 {
-
+	//we dont use this now because Calc*Light functions are using the 
+	//diffuse and specular maps internally
 	//color = texture(material.texture_diffuse1, TexCoords);
 	
 	
@@ -81,7 +82,6 @@ void main()
 	vec3 norm = normalize(Normal);
 	vec3 viewDir = normalize(viewPos - FragPos);
 
-	
 	vec3 result  = vec3(0);
 	// phase 1: Directional lighting
 	result += CalcDirLight(dirLight, norm, viewDir);
