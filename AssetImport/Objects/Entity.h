@@ -4,15 +4,14 @@
 #include <GLM/glm.hpp>
 #include <GLM/gtc/matrix_transform.hpp>
 
-
 #include "../Graphics/Model.h"
 #include "../Graphics/Shader.h"
 
 class Entity
 {
-    public:
+public:
     /*Contstructors*/
-    Entity(char *path, glm::vec3 position = glm::vec3(0.0f),  glm::vec3 angle = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f))
+    Entity(char *path, glm::vec3 position = glm::vec3(0.0f), glm::vec3 angle = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f))
         : position(position), angle(angle), scale(scale)
     {
         model = new Model(path);
@@ -23,12 +22,11 @@ class Entity
         t_model = glm::rotate(t_model, glm::radians(angle.z), glm::vec3(0.0f, 0.0f, 1.0f));
         t_model = glm::scale(t_model, scale);
     }
-    
-    
+
     /*Functions*/
     void Draw(Shader shader)
     {
-        
+
         if (isTransform)
         {
             t_model = glm::mat4(1.0f);
@@ -39,8 +37,7 @@ class Entity
             t_model = glm::scale(t_model, scale);
             isTransform = false;
         }
-        
-        
+
         /*Draw*/
         shader.Use();
         shader.SetMatrix4("model", t_model);
@@ -48,7 +45,7 @@ class Entity
         shader.SetMatrix4("projection", t_projection);
         model->Draw(shader);
     }
-    
+
     void SetView(glm::mat4 view) { t_view = view; }
     void SetProjection(glm::mat4 projection) { t_projection = projection; }
     //Absolute rotation values
@@ -73,29 +70,21 @@ class Entity
         this->scale.z = glm::max(this->scale.z, 0.0f);
         isTransform = true;
     }
-    
-    
-    private:
+
+private:
     bool isTransform = false;
-    
-    
+
     /*Fields*/
     glm::mat4 t_model; //transform model matrix
     glm::mat4 t_view;
     glm::mat4 t_projection;
-    
-    
+
     glm::vec3 position;
     glm::vec3 rotation;
     glm::vec3 angle;
     glm::vec3 scale;
-    
-    Model *model;
-    
-    
-    
-    
-};
 
+    Model *model;
+};
 
 #endif

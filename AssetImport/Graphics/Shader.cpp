@@ -2,7 +2,7 @@
 #include <iostream>
 using namespace std;
 
-void Shader::Compile(const GLchar* vertexSource, const GLchar* fragmentSource, const GLchar* geometrySource)
+void Shader::Compile(const GLchar *vertexSource, const GLchar *fragmentSource, const GLchar *geometrySource)
 {
 	//compile the shaders
 	GLuint vertex, fragment, geometry;
@@ -13,7 +13,7 @@ void Shader::Compile(const GLchar* vertexSource, const GLchar* fragmentSource, c
 	glCompileShader(vertex);
 	checkCompileErrors(vertex, "VERTEX");
 
-	//Fragment 
+	//Fragment
 	fragment = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragment, 1, &fragmentSource, NULL);
 	glCompileShader(fragment);
@@ -101,10 +101,6 @@ void Shader::SetMatrix4(const GLchar *name, const glm::mat4 &matrix, GLboolean u
 	glUniformMatrix4fv(glGetUniformLocation(this->ID, name), 1, GL_FALSE, glm::value_ptr(matrix));
 }
 
-
-
-
-
 void Shader::checkCompileErrors(GLuint object, string type)
 {
 	GLint success;
@@ -117,8 +113,8 @@ void Shader::checkCompileErrors(GLuint object, string type)
 		{
 			glGetShaderInfoLog(object, 124, NULL, infoLog);
 			cout << "[*] ERROR::SHADER: Compile-time error: Type: " << type << "\n"
-				<< infoLog << "\n -- ------------------------------------------ --"
-				<< endl;
+				 << infoLog << "\n -- ------------------------------------------ --"
+				 << endl;
 		}
 	}
 
@@ -129,11 +125,10 @@ void Shader::checkCompileErrors(GLuint object, string type)
 		{
 			glGetProgramInfoLog(object, 1024, NULL, infoLog);
 			cout << "[*] ERROR::SHADER: Link-time error: Type: " << type << "\n"
-				<< infoLog << "\n -- ------------------------------------------ --"
-				<< endl;
+				 << infoLog << "\n -- ------------------------------------------ --"
+				 << endl;
 		}
 	}
-	
 }
 
 Shader &Shader::Use()

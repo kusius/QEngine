@@ -3,26 +3,24 @@
 #include <sstream>
 #include <fstream>
 
-
 #include "Graphics/stb_image.h"
-
 
 //instantiate static variables
 std::map<std::string, Shader> ResourceManager::Shaders;
 std::map<std::string, Texture2D> ResourceManager::Textures;
 
-Shader ResourceManager::LoadShader(const GLchar *vShaderFile, const GLchar *fShaderFile, const GLchar* gShaderFile, std::string  name)
+Shader ResourceManager::LoadShader(const GLchar *vShaderFile, const GLchar *fShaderFile, const GLchar *gShaderFile, std::string name)
 {
 	Shaders[name] = loadShaderFromFile(vShaderFile, fShaderFile, gShaderFile);
 	return Shaders[name];
 }
 
-Shader ResourceManager::GetShader(std::string name)
+Shader *ResourceManager::GetShader(std::string name)
 {
-	return Shaders[name];
+	return &Shaders[name];
 }
 
-Texture2D ResourceManager::LoadTexture(const GLchar* file, GLboolean alpha, std::string name)
+Texture2D ResourceManager::LoadTexture(const GLchar *file, GLboolean alpha, std::string name)
 {
 	Textures[name] = ResourceManager::loadTextureFromFile(file, alpha);
 	return Textures[name];
@@ -43,13 +41,19 @@ void ResourceManager::Clear()
 		glDeleteTextures(1, &it.second.ID);
 }
 
+void ResourceManager::RecompileShaders()
+{
+	for (auto it : Shaders)
+		ResourceManager::LoadShader(it.second.vShaderFile.c_str(), it.second.fShaderFile.c_str(), nullptr, it.first);
+}
+
 Shader ResourceManager::loadShaderFromFile(const GLchar *vShaderFile, const GLchar *fShaderFile, const GLchar *gShaderFile)
 {
 	std::string vertexCode;
 	std::string fragmentCode;
 	std::string geometryCode;
 
-	try 
+	try
 	{
 		//Open the files
 		std::ifstream vertexShaderFile(vShaderFile);
@@ -85,6 +89,8 @@ Shader ResourceManager::loadShaderFromFile(const GLchar *vShaderFile, const GLch
 
 	Shader shader;
 	shader.Compile(vShaderCode, fShaderCode, gShaderFile != nullptr ? gShaderCode : nullptr);
+	shader.vShaderFile = vShaderFile;
+	shader.fShaderFile = fShaderFile;
 	return shader;
 }
 
@@ -99,7 +105,7 @@ Texture2D ResourceManager::loadTextureFromFile(const GLchar *file, GLboolean alp
 	}
 	//Load image
 	int width, height, bpp;
-	unsigned char* image = stbi_load(file, &width, &height, &bpp, alpha ? 4 : 3);
+	unsigned char *image = stbi_load(file, &width, &height, &bpp, alpha ? 4 : 3);
 	if (!image)
 	{
 		std::cout << "LOAD_TEXTURE::FAILED" << std::endl;

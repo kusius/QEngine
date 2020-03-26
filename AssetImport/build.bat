@@ -8,3 +8,4 @@ cl  -Zi  ..\AssetImport\Program.cpp  ..\AssetImport\ResourceManager.cpp  ..\Asse
 opengl32.lib glfw3dll.lib zlibd.lib IrrXML.lib assimp-vc140-mt.lib
 popd
 
+xcopy Shaders ..\build\Shaders /Y
