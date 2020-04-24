@@ -1,0 +1,34 @@
+version(1);
+
+project_name = "Engine";
+
+patterns = 
+{
+ "*.cpp",
+ "*.h",
+ "*.bat",
+};
+
+blacklist_patterns = 
+{
+ ".*",
+};
+
+load_paths = 
+{
+ {.paths = {".", .relative = true, .recursive = true }, .os = "win" }, 
+};
+
+command_list = 
+{
+ {
+	.name = "build", 
+	.out = "*compilation*",
+	.footer_panel = false,
+	.save_ditry_files = true,
+	.cursor_at_end = true,
+	.cmd = { { "build.bat", .os = "win" }, },
+ },
+};
+
+fkey_command[1] = "build";
