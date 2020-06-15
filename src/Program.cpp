@@ -130,17 +130,19 @@ int main(int argc, char **argv)
     /************************
   **********MODEL*********
   **************************/
-    Entity ftm("../AssetImport/Models/naruto/naruto.obj");
+    Entity chair(M_CHAIR);
+    chair.SetView(view);
+    chair.SetProjection(projection);
+    chair.Move(glm::vec3(0.0f, 0.0f, 2.5f));
+    chair.Scale(glm::vec3(-0.5f, -0.5f, -0.5f));
+    chair.Rotate(glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+    Entity ftm("Assets/chair/chair.fbx");
     ftm.SetView(view);
     ftm.SetProjection(projection);
-    ftm.Scale(glm::vec3(-0.8f, -0.8f, -0.8f));
-    //ftm.Rotate(glm::vec3(0.0f, 0.785f, 0.0f), glm::vec3(0.0f,0.0f,0.0f)
-    //);
-
-    //Model naruto("Models/lu/scene.gltf");
-    //Model nanosuit("Models/bunny/untitled.obj");
-    //Model moxxi("Models/moxxi/Moxxi.obj");
-    //Model puss("Models/puss/puss.obj");
+    ftm.Move(glm::vec3(0.0f, 0.0f, 1.5f));
+    ftm.Scale(glm::vec3(-0.5f, -0.5f, -0.5f));
+    ftm.Rotate(glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
     //************SETUP RENDERER OBJECTS ***********
     //Init all render data
@@ -181,8 +183,8 @@ int main(int argc, char **argv)
         shader->Use();
         shader->SetVector3f("spotLight.position", camera.Position);
         shader->SetVector3f("spotLight.direction", camera.Front);
-
         //set view position to use for directional light
+
         shader->SetVector3f("viewPos", camera.Position);
         shader->SetMatrix4("view", view);
         shader->SetMatrix4("projection", projection);
@@ -210,9 +212,13 @@ int main(int argc, char **argv)
                            rotateSpeed * glm::radians(glfwGetTime()), GL_TRUE);
         //renderer->DrawSprite(glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, glm::vec3(204.0f, 0.0f, 102.0f));
 
-        //ftm.SetView(view);
-        //ftm.SetProjection(projection);
-        //ftm.Draw(*shader);
+        ftm.SetView(view);
+        ftm.SetProjection(projection);
+        ftm.Draw(*shader);
+
+        chair.SetView(view);
+        chair.SetProjection(projection);
+        chair.Draw(*shader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

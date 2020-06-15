@@ -42,7 +42,7 @@ struct Material
 	sampler2D texture_diffuse2;//diffuse map (texture) 
 	sampler2D texture_specular1;//specular map (texture)
 	sampler2D texture_specular2;//specular map (texture)
-	sampler2D texture_emission1; //emisison map (texture) -- not used rightno
+	sampler2D texture_emission1; //emission map (texture)
 	//a shininess value
 	float shininess;
 };

@@ -23,9 +23,12 @@ public:
 	}
 	void Draw(Shader shader);
 
-private:
+protected:
 	vector<Mesh> meshes;
 	vector<Texture> textures_loaded;
+	unsigned int loadTextureFromFile(const char *file, const string &directory);
+
+private:
 	string directory;
 
 	void loadModel(string path);
@@ -34,6 +37,5 @@ private:
 
 	vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type,
 										 string typeName);
-	unsigned int loadTextureFromFile(const char *file, const string &directory);
 };
 #endif // !MODEL_H

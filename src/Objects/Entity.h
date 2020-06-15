@@ -5,6 +5,7 @@
 #include <GLM/gtc/matrix_transform.hpp>
 
 #include "../Graphics/Model.h"
+#include "ModelTypes.h"
 #include "../Graphics/Shader.h"
 
 class Entity
@@ -14,7 +15,24 @@ public:
     Entity(char *path, glm::vec3 position = glm::vec3(0.0f), glm::vec3 angle = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f))
         : position(position), angle(angle), scale(scale)
     {
+        //model = new Model(path);
         model = new Model(path);
+        t_model = glm::mat4(1.0f);
+        t_model = glm::translate(t_model, position);
+        t_model = glm::rotate(t_model, glm::radians(angle.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        t_model = glm::rotate(t_model, glm::radians(angle.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        t_model = glm::rotate(t_model, glm::radians(angle.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        t_model = glm::scale(t_model, scale);
+    }
+
+    Entity(ModelType type, glm::vec3 position = glm::vec3(0.0f), glm::vec3 angle = glm::vec3(0.0f), glm::vec3 scale = glm::vec3(1.0f))
+        : position(position), angle(angle), scale(scale)
+    {
+        if (type == M_CHAIR)
+        {
+            model = new ChairModel();
+        }
+
         t_model = glm::mat4(1.0f);
         t_model = glm::translate(t_model, position);
         t_model = glm::rotate(t_model, glm::radians(angle.x), glm::vec3(1.0f, 0.0f, 0.0f));

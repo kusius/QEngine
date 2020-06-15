@@ -15,15 +15,15 @@ void Model::loadModel(string path)
 {
     Assimp::Importer import;
     const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-    
+
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
         cout << "ERROR::ASSIMP::" << import.GetErrorString() << endl;
         return;
     }
-    
+
     directory = path.substr(0, path.find_last_of('/'));
-    
+
     processNode(scene->mRootNode, scene);
 }
 
@@ -33,11 +33,11 @@ void Model::processNode(aiNode *node, const aiScene *scene)
     //process each mesh for this node
     for (unsigned int i = 0; i < node->mNumMeshes; i++)
     {
-        aiMesh * mesh = scene->mMeshes[node->mMeshes[i]];
+        aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
         //process a mesh to our Mesh class and add it to this models meshes
         meshes.push_back(processMesh(mesh, scene));
     }
-    
+
     //recursively the same for each child
     for (unsigned int i = 0; i < node->mNumChildren; i++)
     {
@@ -50,26 +50,26 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
     vector<Vertex> vertices;
     vector<unsigned int> indices;
     vector<Texture> textures;
-    
+
     //Process vertices (pos, norm, texcoords)
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
         Vertex vertex;
-        
+
         //Position vector for this vertex
         glm::vec3 vector;
         vector.x = mesh->mVertices[i].x;
         vector.y = mesh->mVertices[i].y;
         vector.z = mesh->mVertices[i].z;
         vertex.Position = vector;
-        
+
         //Normal vector for this vertex
         vector.x = mesh->mNormals[i].x;
         vector.y = mesh->mNormals[i].y;
         vector.z = mesh->mNormals[i].z;
         vertex.Normal = vector;
-        
-        //Texture coordinates 
+
+        //Texture coordinates
         if (mesh->mTextureCoords[0]) // does the mesh contain texture coordinates?
         {
             glm::vec2 vec;
@@ -79,8 +79,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         }
         else
             vertex.TexCoords = glm::vec2(0.0f, 0.0f);
-        
-        
+
         vertices.push_back(vertex);
     }
     //Process indices
@@ -90,28 +89,25 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         for (unsigned int j = 0; j < face.mNumIndices; j++)
             indices.push_back(face.mIndices[j]);
     }
-    
-    //Process material (Textures: diffuse, specular, emission maps) 
+
+    //Process material (Textures: diffuse, specular, emission maps)
     if (mesh->mMaterialIndex >= 0)
     {
         aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-        
+
         vector<Texture> diffuseMaps = loadMaterialTextures(material,
                                                            aiTextureType_DIFFUSE, "texture_diffuse");
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-        
+
         vector<Texture> specularMaps = loadMaterialTextures(material,
                                                             aiTextureType_SPECULAR, "texture_specular");
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-        
-        
+
         vector<Texture> emissionMaps = loadMaterialTextures(material,
                                                             aiTextureType_EMISSIVE, "texture_emission");
         textures.insert(textures.end(), emissionMaps.begin(), emissionMaps.end());
-        
-        
     }
-    
+
     return Mesh(vertices, indices, textures);
 }
 
@@ -142,30 +138,29 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
             textures_loaded.push_back(texture);
         }
     }
-    
-    
+
     return textures;
 }
 
 unsigned int Model::loadTextureFromFile(const char *file, const string &directory)
 {
     unsigned int id;
-    //generate the texture 
+    //generate the texture
     glGenTextures(1, &id);
-    
+
     int width, height, bpp;
     string sFile = string(file);
     string path = directory + '/' + file;
     cout << "LOAD::TEXTURE::INFO: Loading texture " << path << endl;
-    unsigned char* image = stbi_load((directory + '/' + file).c_str(), &width, &height, &bpp, 0);
-    
+    unsigned char *image = stbi_load((directory + '/' + file).c_str(), &width, &height, &bpp, 0);
+
     if (!image)
     {
-        cout << "LOAD_TEXTURE::FAILED: " << stbi_failure_reason() << " "  << path << endl;
+        cout << "LOAD_TEXTURE::FAILED: " << stbi_failure_reason() << " " << path << endl;
         stbi_image_free(image);
         return id;
     }
-    
+
     GLenum format;
     if (bpp == 1)
         format = GL_RED;
@@ -173,7 +168,7 @@ unsigned int Model::loadTextureFromFile(const char *file, const string &director
         format = GL_RGB;
     else if (bpp == 4)
         format = GL_RGBA;
-    
+
     //send the image data to GPU (level 1 texture)
     glBindTexture(GL_TEXTURE_2D, id);
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, image);
@@ -183,9 +178,9 @@ unsigned int Model::loadTextureFromFile(const char *file, const string &director
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //unbind the texture 
+    //unbind the texture
     //glBindTextureUnit(GL_TEXTURE_2D, 0);
-    //free image data 
+    //free image data
     stbi_image_free(image);
     return id;
 }
