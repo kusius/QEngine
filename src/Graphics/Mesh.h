@@ -18,6 +18,7 @@ struct Vertex
 	glm::vec3 Position;
 	glm::vec3 Normal;
 	glm::vec2 TexCoords;
+	glm::vec3 Tangent;
 };
 
 struct Texture
@@ -38,6 +39,8 @@ public:
 	/*Functions*/
 	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures);
 	void Draw(Shader shader);
+	/*Other data*/
+	GLboolean selected;
 
 private:
 	/*Render data*/

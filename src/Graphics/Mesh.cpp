@@ -2,7 +2,7 @@
 #include <iostream>
 
 Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures)
-    : vertices(vertices), indices(indices), textures(textures)
+    : vertices(vertices), indices(indices), textures(textures), selected(GL_FALSE)
 {
     setupMesh();
 }
@@ -30,6 +30,9 @@ void Mesh::setupMesh()
     //texture ccordinates
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, TexCoords));
+    //tangent space
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, Tangent));
 
     glBindVertexArray(0);
 }
@@ -39,6 +42,7 @@ void Mesh::Draw(Shader shader)
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
     unsigned int emissionNr = 1;
+    unsigned int normalNr = 1;
     //bind all the appropriate textures
     //note that we have a naming convention:
     //spexcular texture 1 is named: texure_specular1
@@ -53,7 +57,9 @@ void Mesh::Draw(Shader shader)
         else if (name == "texture_specular")
             number = std::to_string(specularNr++);
         else if (name == "texture_emission")
-            name = std::to_string(emissionNr++);
+            number = std::to_string(emissionNr++);
+        else if (name == "texture_normal")
+            number = std::to_string(normalNr++);
 
         shader.Use();
         shader.SetInteger(("material." + name + number).c_str(), i);

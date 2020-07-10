@@ -140,8 +140,8 @@ void Renderer::DrawCube(Texture2D &diffuseMap, Texture2D &specularMap, Texture2D
 	diffuseMap.Bind();
 	glActiveTexture(GL_TEXTURE1);
 	specularMap.Bind();
-	glActiveTexture(GL_TEXTURE2);
-	emissionMap.Bind();
+	//glActiveTexture(GL_TEXTURE2);
+	//emissionMap.Bind();
 
 	//set the uniforms
 	this->shader->Use();

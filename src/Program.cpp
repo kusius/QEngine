@@ -37,7 +37,7 @@ glm::vec3 lightPos(1.2, 1.0f, 2.0f); //in global space coordinates
 glm::vec3 pointLightPositions[] = {
     glm::vec3(1.7f, 0.2f, 2.0f),
     glm::vec3(2.3f, -3.3f, -4.0f),
-    glm::vec3(-4.0f, 2.0f, -12.0f),
+    glm::vec3(-4.0f, 2.0f, -6.0f),
     glm::vec3(0.0f, 0.0f, -3.0f)};
 
 float rotateSpeed = 10.0f;
@@ -90,6 +90,7 @@ int main(int argc, char **argv)
     SetupOpenGL();
 
     key_states[GLFW_KEY_R] = GL_FALSE;
+    key_states[GLFW_KEY_P] = GL_FALSE;
 
     /*****************
       VIEW AND PROJECTION MATRICES for orthographic camera
@@ -130,19 +131,18 @@ int main(int argc, char **argv)
     /************************
   **********MODEL*********
   **************************/
-    Entity chair(M_CHAIR);
-    chair.SetView(view);
-    chair.SetProjection(projection);
-    chair.Move(glm::vec3(0.0f, 0.0f, 2.5f));
-    chair.Scale(glm::vec3(-0.5f, -0.5f, -0.5f));
-    chair.Rotate(glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    Entity ftm("Assets/chair/chair.fbx");
+    Entity ftm("Assets/table/scene.gltf");
     ftm.SetView(view);
     ftm.SetProjection(projection);
-    ftm.Move(glm::vec3(0.0f, 0.0f, 1.5f));
-    ftm.Scale(glm::vec3(-0.5f, -0.5f, -0.5f));
-    ftm.Rotate(glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    ftm.Move(glm::vec3(0.0f, -2.0f, 2.5f));
+    ftm.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
+    ftm.Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+    Entity ftm1("Assets/old_sofa/scene.gltf");
+    ftm1.SetView(view);
+    ftm1.SetProjection(projection);
+    ftm1.Move(glm::vec3(0.0f, -2.0f, -1.5f));
 
     //************SETUP RENDERER OBJECTS ***********
     //Init all render data
@@ -150,13 +150,8 @@ int main(int argc, char **argv)
     renderer = new Renderer(*shader, *highlightShader);
     lightRenderer = new Renderer(*lightShader);
 
-    //wireframe mode
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
-
-    float lightDistance = glm::distance(glm::vec3(0.0f), lightPos);
 
     /*****************
     MAIN GAME LOOP
@@ -175,20 +170,25 @@ int main(int argc, char **argv)
         projection = glm::perspective(glm::radians(camera.Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
         view = camera.GetViewMatrix();
 
-        //to move the light
-        //lightPos.x = lightDistance * cos(rotateSpeed * glm::radians(glfwGetTime()));
-        //lightPos.z = lightDistance *  sin(rotateSpeed * glm::radians(glfwGetTime()));
+        //move a couple of lights around
+        pointLightPositions[2].x = 6.0 * cos(rotateSpeed * glm::radians(glfwGetTime()));
+        pointLightPositions[2].z = 6.0 * sin(rotateSpeed * glm::radians(glfwGetTime()));
+
+        shader->SetVector3f("pointLights[2].position", pointLightPositions[2]);
+
+        pointLightPositions[1].y = 6.0 * cos(rotateSpeed * glm::radians(glfwGetTime()));
+        pointLightPositions[1].z = 6.0 * sin(rotateSpeed * glm::radians(glfwGetTime()));
+
+        shader->SetVector3f("pointLights[1].position", pointLightPositions[1]);
 
         //Set out spotlight to follow camera
         shader->Use();
         shader->SetVector3f("spotLight.position", camera.Position);
         shader->SetVector3f("spotLight.direction", camera.Front);
         //set view position to use for directional light
-
         shader->SetVector3f("viewPos", camera.Position);
         shader->SetMatrix4("view", view);
         shader->SetMatrix4("projection", projection);
-
         //highlight shader
         highlightShader->Use();
         highlightShader->SetMatrix4("view", view);
@@ -201,29 +201,26 @@ int main(int argc, char **argv)
 
         //**** RENDER ALL OBJECTS FOR THIS FRAME ****
 
-        //Render our point lights in the scene
+        //Render point lights in the scene
         for (unsigned int i = 0; i < 4; i++)
         {
             lightRenderer->DrawSprite(pointLightPositions[i], glm::vec3(0.2f), 0.0f, glm::vec3(1.0f, 1.0f, 1.0f));
         }
 
-        //Render our cube
-        renderer->DrawCube(diffusemap, specularmap, emissionmap, glm::vec3(0.0f), glm::vec2(1.0f),
-                           rotateSpeed * glm::radians(glfwGetTime()), GL_TRUE);
-        //renderer->DrawSprite(glm::vec3(0.0f), glm::vec3(1.0f), 0.0f, glm::vec3(204.0f, 0.0f, 102.0f));
+        //Render a cube
+        //renderer->DrawCube(diffusemap, specularmap, emissionmap, glm::vec3(0.0f), glm::vec2(1.0f),
+        //                 rotateSpeed * glm::radians(glfwGetTime()), GL_TRUE);
+
+        ftm1.SetView(view);
+        ftm1.SetProjection(projection);
+        ftm1.Draw(*shader);
 
         ftm.SetView(view);
         ftm.SetProjection(projection);
         ftm.Draw(*shader);
 
-        chair.SetView(view);
-        chair.SetProjection(projection);
-        chair.Draw(*shader);
-
         glfwSwapBuffers(window);
         glfwPollEvents();
-
-        //TODO: Check for changed shader programs and reload them, recompile them
     }
 
     ResourceManager::Clear(); //it's static class so doesnt have destructor, clear necessary!
@@ -237,13 +234,13 @@ void ShaderStaticData(Shader *shader, Shader *lightShader)
   **********MATERIAL*******
   **************************/
 
-    //GL_TEXTURE1 = diffuse, GL_TEXTURE2 = specular, GL_TEXTURE3 = emission
+    //GL_TEXTURE1 = diffuse, GL_TEXTURE2 = specular, GL_TEXTURE3 = emission, GL_TEXTURE4 = normal
     shader->Use();
     shader->SetInteger("material.texture_diffuse1", 0);
     shader->SetInteger("material.texture_specular1", 1);
     shader->SetInteger("material.texture_emission1", 2);
     //set the shininess
-    shader->SetFloat("material.shininess", 200.0f);
+    shader->SetFloat("material.shininess", 10.0f);
 
     /************************
   **********LIGHTS*********
@@ -286,7 +283,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 
 inline bool ProcessKeyTap(int key_code, GLFWwindow *window)
 {
-    bool ret;
+    bool ret = GL_FALSE;
     if (glfwGetKey(window, key_code) == GLFW_PRESS &&
         !key_states[key_code])
     {
@@ -323,6 +320,15 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader, Shader *l
     {
         ResourceManager::RecompileShaders();
         ShaderStaticData(shader, lightShader);
+    }
+    if (ProcessKeyTap(GLFW_KEY_P, window))
+    {
+        GLint polygonMode[2];
+        glGetIntegerv(GL_POLYGON_MODE, polygonMode);
+        if (polygonMode[1] == GL_LINE)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        else
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
 }
 

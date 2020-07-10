@@ -14,7 +14,7 @@ void Model::Draw(Shader shader)
 void Model::loadModel(string path)
 {
     Assimp::Importer import;
-    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
@@ -23,7 +23,6 @@ void Model::loadModel(string path)
     }
 
     directory = path.substr(0, path.find_last_of('/'));
-
     processNode(scene->mRootNode, scene);
 }
 
@@ -55,9 +54,14 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
     for (unsigned int i = 0; i < mesh->mNumVertices; i++)
     {
         Vertex vertex;
+        glm::vec3 vector;
+        //Tangent vector for this vertex
+        vector.x = mesh->mTangents[i].x;
+        vector.y = mesh->mTangents[i].y;
+        vector.z = mesh->mTangents[i].z;
+        vertex.Tangent = vector;
 
         //Position vector for this vertex
-        glm::vec3 vector;
         vector.x = mesh->mVertices[i].x;
         vector.y = mesh->mVertices[i].y;
         vector.z = mesh->mVertices[i].z;
@@ -106,6 +110,10 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
         vector<Texture> emissionMaps = loadMaterialTextures(material,
                                                             aiTextureType_EMISSIVE, "texture_emission");
         textures.insert(textures.end(), emissionMaps.begin(), emissionMaps.end());
+
+        vector<Texture> normalMaps = loadMaterialTextures(material,
+                                                          aiTextureType_NORMALS, "texture_normal");
+        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
     }
 
     return Mesh(vertices, indices, textures);
@@ -179,7 +187,7 @@ unsigned int Model::loadTextureFromFile(const char *file, const string &director
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     //unbind the texture
-    //glBindTextureUnit(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
     //free image data
     stbi_image_free(image);
     return id;

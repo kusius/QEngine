@@ -43,6 +43,7 @@ struct Material
 	sampler2D texture_specular1;//specular map (texture)
 	sampler2D texture_specular2;//specular map (texture)
 	sampler2D texture_emission1; //emission map (texture)
+	sampler2D texture_normal1; //normal map (texture)
 	//a shininess value
 	float shininess;
 };
@@ -51,6 +52,7 @@ struct Material
 in vec3 Normal;
 in vec3 FragPos;
 in vec2 TexCoords;
+in mat3 TBN;
 
 //Output (fragment's color)
 out vec4 color;
@@ -79,7 +81,11 @@ void main()
 	
 	
 	//properties
-	vec3 norm = normalize(Normal);
+	//vec3 norm = normalize(Normal); // we now have normal maps in the pipeline
+	vec3 norm = texture(material.texture_normal1, TexCoords).rgb;
+	norm = norm * 2.0 - 1.0;
+	norm = normalize(TBN * norm);
+	
 	vec3 viewDir = normalize(viewPos - FragPos);
 
 	vec3 result  = vec3(0);
@@ -92,13 +98,16 @@ void main()
     result += CalcSpotLight(spotLight, norm, FragPos, viewDir);    
     
 	//phase4: emission does not need lighting calculation. Add to result as is
-	vec3 emission = texture(material.texture_emission1, TexCoords).rgb;
-	result += emission;
+	//vec3 emission = texture(material.texture_emission1, TexCoords).rgb;
+	//result += emission;
 
-
+	
+	//color = texture(material.texture_emission1, TexCoords);
+	//color = vec4(norm, 1.0f);
 
 
     color = vec4(result, 1.0f);
+
 	
 }
 
