@@ -15,6 +15,16 @@
                 "cwd": "${workspaceFolder}/build/"
             },
             "problemMatcher": []
+        },
+        {
+            "group": "none",
+            "label": "qstom-copy-resources",
+            "type": "shell",
+            "command": "cmake --build . --target  copy_resources",
+            "options": { 
+                "cwd": "${workspaceFolder}/build/"
+            },
+            "problemMatcher": []
         }
     ]
 }
