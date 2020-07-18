@@ -9,6 +9,8 @@
 #include "Graphics/SpriteRenderer.h"
 #include "Objects/Entity.h"
 
+#include "Thirdparty/assimp/version.h"
+
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
@@ -50,9 +52,16 @@ GLFWwindow *CreateWindow()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_DECORATED, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
-    window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Q", nullptr, nullptr);
+    const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+
+    window = glfwCreateWindow(mode->width, mode->height, "Q", glfwGetPrimaryMonitor(), nullptr);
     glfwMakeContextCurrent(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -80,6 +89,12 @@ void SetupOpenGL()
     glEnable(GL_CULL_FACE);
 }
 
+void PrintLibVersions()
+{
+    std::cout << "Library Versions" << std::endl;
+    std::cout << "Assimp: " << aiGetVersionMajor() << "." << aiGetVersionMinor() << std::endl;
+}
+
 int main(int argc, char **argv)
 {
 
@@ -88,6 +103,7 @@ int main(int argc, char **argv)
         return -1;
 
     SetupOpenGL();
+    PrintLibVersions();
 
     key_states[GLFW_KEY_R] = GL_FALSE;
     key_states[GLFW_KEY_P] = GL_FALSE;
@@ -213,11 +229,11 @@ int main(int argc, char **argv)
 
         ftm1.SetView(view);
         ftm1.SetProjection(projection);
-        ftm1.Draw(*shader);
+        ftm1.Draw(shader, highlightShader);
 
         ftm.SetView(view);
         ftm.SetProjection(projection);
-        ftm.Draw(*shader);
+        ftm.Draw(shader, highlightShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

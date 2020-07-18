@@ -37,7 +37,7 @@ void Mesh::setupMesh()
     glBindVertexArray(0);
 }
 
-void Mesh::Draw(Shader shader)
+void Mesh::Draw(Shader *shader, Shader *highlightsShader)
 {
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
@@ -61,17 +61,37 @@ void Mesh::Draw(Shader shader)
         else if (name == "texture_normal")
             number = std::to_string(normalNr++);
 
-        shader.Use();
-        shader.SetInteger(("material." + name + number).c_str(), i);
-        shader.SetFloat("material.shininess", 32.0f);
+        shader->Use();
+        shader->SetInteger(("material." + name + number).c_str(), i);
+        shader->SetFloat("material.shininess", 32.0f);
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
 
     //draw mesh
     glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+    //draw outline
+    if (highlightsShader)
+    {
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0xFF);
+        glDisable(GL_DEPTH_TEST);
+        highlightsShader->Use();
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glEnable(GL_DEPTH_TEST);
+    }
+    else
+    {
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    }
+
+    glBindVertexArray(0);
     // always good practice to set everything back to defaults once configured.
     glActiveTexture(GL_TEXTURE0);
 }

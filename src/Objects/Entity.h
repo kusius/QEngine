@@ -42,7 +42,7 @@ public:
     }
 
     /*Functions*/
-    void Draw(Shader shader)
+    void Draw(Shader *shader, Shader *highlightShader = nullptr)
     {
 
         if (isTransform)
@@ -57,11 +57,18 @@ public:
         }
 
         /*Draw*/
-        shader.Use();
-        shader.SetMatrix4("model", t_model);
-        shader.SetMatrix4("view", t_view);
-        shader.SetMatrix4("projection", t_projection);
-        model->Draw(shader);
+        shader->Use();
+        shader->SetMatrix4("model", t_model);
+        shader->SetMatrix4("view", t_view);
+        shader->SetMatrix4("projection", t_projection);
+        if (highlightShader && isSelected)
+        {
+            highlightShader->Use();
+            highlightShader->SetMatrix4("model", glm::scale(t_model, glm::vec3(1.05, 1.05, 1.05)));
+            model->Draw(shader, highlightShader);
+        }
+        else
+            model->Draw(shader);
     }
 
     void SetView(glm::mat4 view) { t_view = view; }
@@ -88,6 +95,8 @@ public:
         this->scale.z = glm::max(this->scale.z, 0.0f);
         isTransform = true;
     }
+
+    bool isSelected = false;
 
 private:
     bool isTransform = false;

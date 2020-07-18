@@ -150,7 +150,6 @@ void Renderer::DrawCube(Texture2D &diffuseMap, Texture2D &specularMap, Texture2D
 	glBindVertexArray(this->quadVAO);
 	if (isSelected)
 	{
-
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilMask(0xFF);
 		glDrawArrays(GL_TRIANGLES, 0, 36);

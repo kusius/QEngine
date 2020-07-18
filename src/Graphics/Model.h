@@ -21,7 +21,7 @@ public:
 	{
 		loadModel(path);
 	}
-	void Draw(Shader shader);
+	void Draw(Shader *shader, Shader *highlightShader = nullptr);
 
 protected:
 	vector<Mesh> meshes;
