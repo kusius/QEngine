@@ -8,11 +8,20 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "label": "qstom-cmake",
+            "label": "nmake Debug",
             "type": "shell",
-            "command": "cmake --build .",
+            "command": "nmake",
             "options": {
-                "cwd": "${workspaceFolder}/build/"
+                "cwd": "${workspaceFolder}/build/debug/"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "nmake Release",
+            "type": "shell",
+            "command": "nmake",
+            "options": {
+                "cwd": "${workspaceFolder}/build/release/"
             },
             "problemMatcher": []
         },
@@ -21,8 +30,18 @@
             "label": "qstom-copy-resources",
             "type": "shell",
             "command": "cmake --build . --target  copy_resources",
-            "options": { 
-                "cwd": "${workspaceFolder}/build/"
+            "options": {
+                "cwd": "${workspaceFolder}/build/debug/"
+            },
+            "problemMatcher": []
+        },
+        {
+            "group": "none",
+            "label": "Setup cmake Debug",
+            "type": "shell",
+            "command": "cmake -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=debug ${workspaceFolder}\\src",
+            "options": {
+                "cwd": "${workspaceFolder}/build/debug/"
             },
             "problemMatcher": []
         }

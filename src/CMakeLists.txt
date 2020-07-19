@@ -20,13 +20,21 @@ ${GRAPHICS_SOURCE_FILES}
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/Thirdparty)
 link_directories(${PROJECT_SOURCE_DIR}/Thirdparty/libs)
 
-SET(CMAKE_CXX_FLAGS  "/nologo /Zi  /EHsc /wd4005")
+
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /nologo /Zi  /EHsc /wd4005")
+#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /nologo /Zi  /EHsc /wd4005")
+
 add_executable(Q ${SOURCE_FILES})
-target_link_libraries(Q opengl32 glfw3dll zlibd IrrXML assimp-vc140-mt)
+
+target_link_libraries(Q 
+                       opengl32 glfw3dll 
+                       debug zlibstaticd optimized zlibstatic
+                       debug IrrXMLd optimized IrrXML
+                       debug assimp-vc142-mtd optimized assimp-vc142-mt)
 
 
 
-#### Copy resources ####
+#### Copy Assets folder ####
 add_custom_target(copy_resources ALL COMMAND ${CMAKE_COMMAND} -E copy_directory
-  "${PROJECT_SOURCE_DIR}/Assets" ${CMAKE_BINARY_DIR}/$<CONFIGURATION>/
+  "${PROJECT_SOURCE_DIR}/Assets" ${CMAKE_BINARY_DIR}/Assets
 )

@@ -26,11 +26,12 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 //setup mouse controls
 bool firstMouse = GL_TRUE;
+bool mouseAffectsCamera = GL_TRUE;
 float lastX = (float)SCREEN_WIDTH / 2;
 float lastY = (float)SCREEN_HEIGHT / 2;
 
-//keyboard states
-std::map<int, GLboolean> key_states;
+//keyboard states (https://www.glfw.org/docs/latest/group__keys.html)
+bool key_states[512] = {GL_FALSE};
 
 //light position
 glm::vec3 lightPos(1.2, 1.0f, 2.0f); //in global space coordinates
@@ -53,15 +54,20 @@ GLFWwindow *CreateWindow()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_DECORATED, GL_TRUE);
+    glfwWindowHint(GLFW_MAXIMIZED, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
+    //Windowed Fullscreen
+
     const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    /*
     glfwWindowHint(GLFW_RED_BITS, mode->redBits);
     glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
     glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
     glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-
     window = glfwCreateWindow(mode->width, mode->height, "Q", glfwGetPrimaryMonitor(), nullptr);
+*/
+    window = glfwCreateWindow(mode->width, mode->height, "Q", nullptr, nullptr);
     glfwMakeContextCurrent(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -91,9 +97,10 @@ void SetupOpenGL()
 
 void PrintLibVersions()
 {
-    std::cout << "Library Versions" << std::endl;
     std::cout << "Assimp: " << aiGetVersionMajor() << "." << aiGetVersionMinor() << std::endl;
 }
+
+Entity *ftm, *ftm1;
 
 int main(int argc, char **argv)
 {
@@ -105,8 +112,11 @@ int main(int argc, char **argv)
     SetupOpenGL();
     PrintLibVersions();
 
-    key_states[GLFW_KEY_R] = GL_FALSE;
-    key_states[GLFW_KEY_P] = GL_FALSE;
+    //TODO(George): Change data structure here to simply be an array instead of map.
+    //key_states[GLFW_KEY_R] = GL_FALSE;
+    //key_states[GLFW_KEY_P] = GL_FALSE;
+    //key_states[GLFW_KEY_PERIOD] = GL_FALSE;
+    //key_states[GLFW_KEY_SPACE] = GL_FALSE;
 
     /*****************
       VIEW AND PROJECTION MATRICES for orthographic camera
@@ -119,17 +129,17 @@ int main(int argc, char **argv)
     /*****************
     RESOURCE LOADING
     ******************/
-    ResourceManager::LoadTexture("container2.png", GL_FALSE, "container");
-    ResourceManager::LoadTexture("container2_specular.png", GL_FALSE, "container_specular");
-    ResourceManager::LoadTexture("matrix.jpg", GL_FALSE, "container_emission");
+    ResourceManager::LoadTexture("Assets/container2.png", GL_FALSE, "container");
+    ResourceManager::LoadTexture("Assets/container2_specular.png", GL_FALSE, "container_specular");
+    ResourceManager::LoadTexture("Assets/matrix.jpg", GL_FALSE, "container_emission");
     Texture2D diffusemap = ResourceManager::GetTexture("container");
     Texture2D specularmap = ResourceManager::GetTexture("container_specular");
     Texture2D emissionmap = ResourceManager::GetTexture("container_emission");
 
     //Make our shaders (read, compile, link)
-    ResourceManager::LoadShader("./Shaders/shader.vert", "./Shaders/lightingshader.frag", nullptr, "shader");
-    ResourceManager::LoadShader("./Shaders/lampshader.vert", "./Shaders/lampshader.frag", nullptr, "lampshader");
-    ResourceManager::LoadShader("./Shaders/shader.vert", "./Shaders/diffusecolor.frag", nullptr, "highlight");
+    ResourceManager::LoadShader("Assets/Shaders/shader.vert", "Assets/Shaders/lightingshader.frag", nullptr, "shader");
+    ResourceManager::LoadShader("Assets/Shaders/lampshader.vert", "Assets/Shaders/lampshader.frag", nullptr, "lampshader");
+    ResourceManager::LoadShader("Assets/Shaders/shader.vert", "Assets/Shaders/diffusecolor.frag", nullptr, "highlight");
 
     //3D set info to shade
     Shader *shader = ResourceManager::GetShader("shader");
@@ -147,18 +157,17 @@ int main(int argc, char **argv)
     /************************
   **********MODEL*********
   **************************/
+    ftm = new Entity("Assets/models/table/scene.gltf");
+    ftm->SetView(view);
+    ftm->SetProjection(projection);
+    ftm->Move(glm::vec3(0.0f, -2.0f, 2.5f));
+    ftm->Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
+    ftm->Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    Entity ftm("Assets/table/scene.gltf");
-    ftm.SetView(view);
-    ftm.SetProjection(projection);
-    ftm.Move(glm::vec3(0.0f, -2.0f, 2.5f));
-    ftm.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
-    ftm.Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-    Entity ftm1("Assets/old_sofa/scene.gltf");
-    ftm1.SetView(view);
-    ftm1.SetProjection(projection);
-    ftm1.Move(glm::vec3(0.0f, -2.0f, -1.5f));
+    ftm1 = new Entity("Assets/models/old_sofa/scene.gltf");
+    ftm1->SetView(view);
+    ftm1->SetProjection(projection);
+    ftm1->Move(glm::vec3(0.0f, -2.0f, -1.5f));
 
     //************SETUP RENDERER OBJECTS ***********
     //Init all render data
@@ -190,18 +199,15 @@ int main(int argc, char **argv)
         pointLightPositions[2].x = 6.0 * cos(rotateSpeed * glm::radians(glfwGetTime()));
         pointLightPositions[2].z = 6.0 * sin(rotateSpeed * glm::radians(glfwGetTime()));
 
-        shader->SetVector3f("pointLights[2].position", pointLightPositions[2]);
-
         pointLightPositions[1].y = 6.0 * cos(rotateSpeed * glm::radians(glfwGetTime()));
         pointLightPositions[1].z = 6.0 * sin(rotateSpeed * glm::radians(glfwGetTime()));
 
-        shader->SetVector3f("pointLights[1].position", pointLightPositions[1]);
-
-        //Set out spotlight to follow camera
+        //Lighting shader
         shader->Use();
         shader->SetVector3f("spotLight.position", camera.Position);
         shader->SetVector3f("spotLight.direction", camera.Front);
-        //set view position to use for directional light
+        shader->SetVector3f("pointLights[2].position", pointLightPositions[2]);
+        shader->SetVector3f("pointLights[1].position", pointLightPositions[1]);
         shader->SetVector3f("viewPos", camera.Position);
         shader->SetMatrix4("view", view);
         shader->SetMatrix4("projection", projection);
@@ -227,13 +233,13 @@ int main(int argc, char **argv)
         //renderer->DrawCube(diffusemap, specularmap, emissionmap, glm::vec3(0.0f), glm::vec2(1.0f),
         //                 rotateSpeed * glm::radians(glfwGetTime()), GL_TRUE);
 
-        ftm1.SetView(view);
-        ftm1.SetProjection(projection);
-        ftm1.Draw(shader, highlightShader);
+        ftm1->SetView(view);
+        ftm1->SetProjection(projection);
+        ftm1->Draw(shader, highlightShader);
 
-        ftm.SetView(view);
-        ftm.SetProjection(projection);
-        ftm.Draw(shader, highlightShader);
+        ftm->SetView(view);
+        ftm->SetProjection(projection);
+        ftm->Draw(shader, highlightShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -259,11 +265,10 @@ void ShaderStaticData(Shader *shader, Shader *lightShader)
     shader->SetFloat("material.shininess", 10.0f);
 
     /************************
-  **********LIGHTS*********
-  **************************/
+     **********LIGHTS*********
+    **************************/
 
     //******** DIRECTIONAL LIGHT ************
-    //shader.SetVector3f("dirLight.direction", -0.2f, -1.0f, -0.3f);
     shader->SetVector3f("dirLight.direction", 1.0f, 1.0f, 1.0f);
     shader->SetVector3f("dirLight.ambient", glm::vec3(0.0f));  //a dark ambient
     shader->SetVector3f("dirLight.diffuse", glm::vec3(0.5f));  //darken the light a bit
@@ -300,6 +305,8 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 inline bool ProcessKeyTap(int key_code, GLFWwindow *window)
 {
     bool ret = GL_FALSE;
+    if (key_code < 0)
+        return ret;
     if (glfwGetKey(window, key_code) == GLFW_PRESS &&
         !key_states[key_code])
     {
@@ -346,6 +353,25 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader, Shader *l
         else
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     }
+    if (ProcessKeyTap(GLFW_KEY_PERIOD, window))
+    {
+        GLint status;
+        status = glfwGetInputMode(window, GLFW_CURSOR);
+        if (status == GLFW_CURSOR_DISABLED)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            mouseAffectsCamera = GL_FALSE;
+        }
+        else
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            mouseAffectsCamera = GL_TRUE;
+        }
+    }
+    if (ProcessKeyTap(GLFW_KEY_SPACE, window))
+    {
+        ftm->isSelected = !ftm->isSelected;
+    }
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
@@ -361,10 +387,13 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos)
     lastX = xpos;
     lastY = ypos;
 
-    dx *= camera.MouseSensitivity;
-    dy *= camera.MouseSensitivity;
+    if (mouseAffectsCamera)
+    {
+        dx *= camera.MouseSensitivity;
+        dy *= camera.MouseSensitivity;
 
-    camera.ProcessMouseMovement(dx, dy, GL_TRUE);
+        camera.ProcessMouseMovement(dx, dy, GL_TRUE);
+    }
 }
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
