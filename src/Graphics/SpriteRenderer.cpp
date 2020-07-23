@@ -172,27 +172,31 @@ void Renderer::DrawCube(Texture2D &diffuseMap, Texture2D &specularMap, Texture2D
 	glBindVertexArray(0);
 }
 
-void Renderer::DrawSprite(glm::vec3 translation,
-						  glm::vec3 scale, GLfloat rotation,
-						  glm::vec3 color)
+void Renderer::DrawPointLights(glm::vec3 pointLightPositions[], unsigned int numLights,
+							   glm::vec3 scale, GLfloat rotation,
+							   glm::vec3 color)
 {
-	//perform translations
-	glm::mat4 transform = glm::mat4(1.0f);
-	//translate
-	transform = glm::translate(transform, translation);
-	//scale
-	transform = glm::scale(transform, glm::vec3(scale));
-	//rotate
-	transform = glm::rotate(transform, rotation * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+	for (unsigned int i = 0; i < numLights; i++)
+	{
+		glm::vec3 translation = pointLightPositions[i];
+		//perform translations
+		glm::mat4 transform = glm::mat4(1.0f);
+		//translate
+		transform = glm::translate(transform, translation);
+		//scale
+		transform = glm::scale(transform, glm::vec3(scale));
+		//rotate
+		transform = glm::rotate(transform, rotation * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 
-	//set the uniforms
-	this->shader->Use();
-	this->shader->SetMatrix4("model", transform);
+		//set the uniforms
+		this->shader->Use();
+		this->shader->SetMatrix4("model", transform);
 
-	glBindVertexArray(this->quadVAO);
-	//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-	glBindVertexArray(0);
+		glBindVertexArray(this->quadVAO);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+	}
 }
 
 void Renderer::DrawSprite(Texture2D &texture)
@@ -207,4 +211,12 @@ void Renderer::DrawSprite(Texture2D &texture)
 	//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 	//glBindVertexArray(0);//no need to unbind every time but whaduheck
+}
+
+void Renderer::DrawEntities(const std::vector<Entity *> entities)
+{
+	for (Entity *e : entities)
+	{
+		e->Draw(this->shader, this->highlightShader);
+	}
 }

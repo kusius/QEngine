@@ -59,20 +59,16 @@ public:
         /*Draw*/
         shader->Use();
         shader->SetMatrix4("model", t_model);
-        shader->SetMatrix4("view", t_view);
-        shader->SetMatrix4("projection", t_projection);
         if (highlightShader && isSelected)
         {
             highlightShader->Use();
-            highlightShader->SetMatrix4("model", glm::scale(t_model, glm::vec3(1.05, 1.05, 1.05)));
+            highlightShader->SetMatrix4("model", glm::scale(t_model, glm::vec3(1.01, 1.01, 1.01)));
             model->Draw(shader, highlightShader);
         }
         else
             model->Draw(shader);
     }
 
-    void SetView(glm::mat4 view) { t_view = view; }
-    void SetProjection(glm::mat4 projection) { t_projection = projection; }
     //Absolute rotation values
     void Rotate(glm::vec3 angle, glm::vec3 rotation)
     {
@@ -103,8 +99,6 @@ private:
 
     /*Fields*/
     glm::mat4 t_model; //transform model matrix
-    glm::mat4 t_view;
-    glm::mat4 t_projection;
 
     glm::vec3 position;
     glm::vec3 rotation;

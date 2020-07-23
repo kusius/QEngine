@@ -9,11 +9,18 @@ Graphics/SpriteRenderer.cpp
 Graphics/Texture.cpp
 )
 
+FILE(GLOB UI_SOURCE_FILES
+UI/imgui*.cpp
+UI/UI.cpp
+UI/TextEditor.cpp
+)
+
 set(SOURCE_FILES
 Program.cpp
 ResourceManager.cpp
 Thirdparty/glad.c
 ${GRAPHICS_SOURCE_FILES}
+${UI_SOURCE_FILES}
 )
 
 ## Compile Link ##
@@ -21,7 +28,7 @@ include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/Thirdparty)
 link_directories(${PROJECT_SOURCE_DIR}/Thirdparty/libs)
 
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /nologo /Zi  /EHsc /wd4005")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /nologo /Zi  /EHsc /wd4005 /DQDEBUG")
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /nologo /Zi  /EHsc /wd4005")
 
 add_executable(Q ${SOURCE_FILES})
