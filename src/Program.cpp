@@ -1,5 +1,8 @@
+#include <Windows.h>
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <thread>
 
 #include <Thirdparty/glad/glad.h>
 #include <Thirdparty/glfw/glfw3.h>
@@ -17,17 +20,21 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void ProcessInput(GLFWwindow *window, float deltaTime, Shader *hader, Shader *lightShader);
 void ShaderStaticData(Shader *shader, Shader *lightShader);
-GLuint SCREEN_WIDTH = 800;
-GLuint SCREEN_HEIGHT = 600;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+
+//Video properties
+int monitorRefreshRate;
+double targetFrameTime;
+unsigned int screenWidth = 800;
+unsigned int screenHeight = 600;
 
 //mouse controls
 bool firstMouse = GL_TRUE;
 bool mouseAffectsCamera = GL_TRUE;
 bool disableMouse = GL_FALSE;
-float lastX = (float)SCREEN_WIDTH / 2;
-float lastY = (float)SCREEN_HEIGHT / 2;
+float lastX = (float)screenWidth / 2;
+float lastY = (float)screenHeight / 2;
 
 //keyboard states (https://www.glfw.org/docs/latest/group__keys.html)
 //TODO(George): Consider an InputManager class
@@ -45,29 +52,28 @@ glm::vec3 pointLightPositions[] = {
 
 //************ENTITIES***********//
 //TODO(George): Consider merging these into ResourceManager
-Entity *ftm, *ftm1;
-vector<Entity *> entities;
-
-float rotateSpeed = 10.0f;
+vector<Entity> entities;
 
 bool uiWindow = GL_FALSE;
 bool uiWindowFocused = GL_FALSE;
 bool editorHasChanges = GL_FALSE;
 UI::UIInfo info = {};
 
-GLFWwindow *CreateWindow()
+GLFWwindow *createWindow()
 {
     GLFWwindow *window;
     if (!glfwInit())
         return NULL;
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_DECORATED, GL_TRUE);
     glfwWindowHint(GLFW_MAXIMIZED, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
     const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    monitorRefreshRate = mode->refreshRate;
+    targetFrameTime = 1.0 / monitorRefreshRate;
     /*
     //Windowed Fullscreen
     glfwWindowHint(GLFW_RED_BITS, mode->redBits);
@@ -75,12 +81,12 @@ GLFWwindow *CreateWindow()
     glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
     glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
     window = glfwCreateWindow(mode->width, mode->height, "Q", glfwGetPrimaryMonitor(), nullptr);
-*/
-    SCREEN_WIDTH = mode->width;
-    SCREEN_HEIGHT = mode->height;
+   */
+    //screenWidth = mode->width;
+    //screenHeight = mode->height;
     window = glfwCreateWindow(mode->width, mode->height, "Q", nullptr, nullptr);
     glfwMakeContextCurrent(window);
-    //glfwSwapInterval(1);
+    glfwSwapInterval(1);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -94,6 +100,10 @@ GLFWwindow *CreateWindow()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
+
+    // NOTE(George): Windows, set scheduler granularity to 1ms
+    timeBeginPeriod(1);
+
     return window;
 }
 
@@ -112,12 +122,15 @@ void PrintLibVersions()
     std::cout << "Assimp: " << aiGetVersionMajor() << "." << aiGetVersionMinor() << std::endl;
     std::cout << "OpenGL: " << glGetString(GL_VERSION) << std::endl;
     std::cout << "GLSL: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+    int major, minor, rev;
+    glfwGetVersion(&major, &minor, &rev);
+    std::cout << "GLFW: " << major << "." << minor << "rev" << rev << std::endl;
 }
 
 int main(int argc, char **argv)
 {
 
-    GLFWwindow *window = CreateWindow();
+    GLFWwindow *window = createWindow();
     if (!window)
         return -1;
 
@@ -132,7 +145,7 @@ int main(int argc, char **argv)
     glm::mat4 view = glm::mat4(1);
     view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
     glm::mat4 projection = glm::mat4(1);
-    projection = glm::perspective(glm::radians(camera.Zoom), (float)SCREEN_WIDTH / float(SCREEN_HEIGHT), 0.1f, 100.0f);
+    projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
 
     /*****************
     RESOURCE LOADING
@@ -155,47 +168,63 @@ int main(int argc, char **argv)
     ShaderStaticData(shader, lightShader);
 
     //Load models
-    ftm = new Entity("Assets/models/table/scene.gltf");
-    ftm1 = new Entity("Assets/models/old_sofa/scene.gltf");
-    ftm->Move(glm::vec3(0.0f, -2.0f, 2.5f));
-    ftm->Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
-    ftm->Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    ftm1->Move(glm::vec3(0.0f, -2.0f, -1.5f));
+    Entity e("Assets/models/table/scene.gltf");
 
-    entities.push_back(ftm);
-    entities.push_back(ftm1);
+    e.Move(glm::vec3(0.0f, -2.0f, 2.5f));
+    e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
+    e.Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    entities.push_back(e);
+
+    e = Entity("Assets/models/old_sofa/scene.gltf");
+    e.Move(glm::vec3(0.0f, -2.0f, -1.5f));
+    entities.push_back(e);
 
     //************SETUP RENDERER OBJECTS ***********
     Renderer *renderer, *lightRenderer;
     renderer = new Renderer(*shader, *highlightShader);
     lightRenderer = new Renderer(*lightShader);
 
-    float deltaTime = 0.0f;
-    float lastFrame = 0.0f;
+    double deltaTime = 0.0f;
+    double startFrameTime = 0.0f;
+    double endFrameTime = 0.0f;
+    float rotateSpeed = 10.0f;
 
     UI::SetupContext(window);
     UI::ShaderEditorOpenFile("Assets/Shaders/lightingshader.frag");
     //*****************
     //MAIN LOOP
     //******************
-
+    glfwSetTime(0.0f);
     while (!glfwWindowShouldClose(window))
     {
-        glfwPollEvents();
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-        ProcessInput(window, deltaTime, shader, lightShader);
+        startFrameTime = glfwGetTime();
+        deltaTime = startFrameTime - endFrameTime;
+        endFrameTime = startFrameTime;
 
-        projection = glm::perspective(glm::radians(camera.Zoom), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
+        ProcessInput(window, (float)deltaTime, shader, lightShader);
+
+        projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
         view = camera.GetViewMatrix();
 
-        pointLightPositions[2].x = 6.0 * cos(rotateSpeed * glm::radians(glfwGetTime()));
-        pointLightPositions[2].z = 6.0 * sin(rotateSpeed * glm::radians(glfwGetTime()));
+        pointLightPositions[2].x = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
+        pointLightPositions[2].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
 
-        pointLightPositions[1].y = 6.0 * cos(rotateSpeed * glm::radians(glfwGetTime()));
-        pointLightPositions[1].z = 6.0 * sin(rotateSpeed * glm::radians(glfwGetTime()));
+        pointLightPositions[1].y = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
+        pointLightPositions[1].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
 
+        UI::NewFrame();
+        UI::UpdateUI(uiWindow, editorHasChanges, &info);
+        if (editorHasChanges)
+        {
+            std::cout << "Recompiling shaders" << std::endl;
+            ResourceManager::RecompileShaders();
+            ShaderStaticData(shader, lightShader);
+            editorHasChanges = GL_FALSE;
+        }
+        uiWindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
+
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         shader->Use();
         shader->SetVector3f("spotLight.position", camera.Position);
         shader->SetVector3f("spotLight.direction", camera.Front);
@@ -208,28 +237,37 @@ int main(int argc, char **argv)
         highlightShader->Use();
         highlightShader->SetMatrix4("view", view);
         highlightShader->SetMatrix4("projection", projection);
+        renderer->DrawEntities(entities);
 
         lightShader->Use();
         lightShader->SetMatrix4("view", view);
         lightShader->SetMatrix4("projection", projection);
-
-        UI::NewFrame();
-        UI::UpdateUI(uiWindow, editorHasChanges, &info);
-        if (editorHasChanges)
-        {
-            ResourceManager::RecompileShaders();
-            ShaderStaticData(shader, lightShader);
-            editorHasChanges = GL_FALSE;
-        }
-        uiWindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
-
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         lightRenderer->DrawPointLights(pointLightPositions, 4, glm::vec3(0.2));
-        renderer->DrawEntities(entities);
+
         UI::Render();
 
         glfwSwapBuffers(window);
+        glfwPollEvents();
+
+#if 0
+        double thisTime = glfwGetTime();
+        deltaTime = thisTime - startFrameTime;
+        if (deltaTime < targetFrameTime)
+        {
+            while (deltaTime < targetFrameTime)
+            {
+                DWORD sleepMs = (DWORD)(1000 * (targetFrameTime - deltaTime));
+                Sleep(sleepMs);
+                thisTime = glfwGetTime();
+                deltaTime = thisTime - startFrameTime;
+            }
+        }
+        else
+        {
+            // TODO(George): We missed the framerate
+            std::cout << "Missed framerate" << std::endl;
+        }
+#endif
     }
 
     UI::Shutdown();
@@ -351,7 +389,7 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader, Shader *l
 
         if (ProcessKeyTap(GLFW_KEY_SPACE, window))
         {
-            ftm->isSelected = !ftm->isSelected;
+            entities[0].isSelected = !entities[0].isSelected;
         }
     }
     if (ProcessKeyTap(GLFW_KEY_F1, window))

@@ -65,7 +65,7 @@ public:
 		updateCameraVectors();
 	}
 
-	// Returns the view matrix calculated using Eular Angles and the LookAt Matrix
+	// Returns the view matrix calculated using Euler Angles and the LookAt Matrix
 	glm::mat4 GetViewMatrix()
 	{
 		return glm::lookAt(Position, Position + Front, Up);
@@ -107,7 +107,7 @@ public:
 				Pitch = -89.0f;
 		}
 
-		// Update Front, Right and Up Vectors using the updated Eular angles
+		// Update Front, Right and Up Vectors using the updated Euler angles
 		updateCameraVectors();
 	}
 

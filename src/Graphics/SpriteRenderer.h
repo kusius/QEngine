@@ -29,7 +29,7 @@ public:
 						 glm::vec3 color = glm::vec3(1.0f));
 	void DrawSprite(Texture2D &texture);
 
-	void DrawEntities(const std::vector<Entity *> entities);
+	void DrawEntities(const std::vector<Entity> &entities);
 
 private:
 	//Render state
