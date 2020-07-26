@@ -13,7 +13,7 @@ namespace UI
     };
 
     void SetupContext(GLFWwindow *window);
-    void UpdateUI(bool &uiWindow, bool &editorHasChanges, UIInfo *info);
+    void UpdateUI(bool &uiWindow, bool &editorHasChanges);
     void ShaderEditorOpenFile(const char *file);
     void ShaderEditorSaveFile(const char *file, std::string &textToSave);
     void NewFrame();

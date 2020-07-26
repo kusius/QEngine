@@ -53,7 +53,7 @@ void UI::ShaderEditorSaveFile(const char *file, std::string &textToSave)
     t.close();
 }
 
-void UI::UpdateUI(bool &uiWindow, bool &hasChanges, UI::UIInfo *info)
+void UI::UpdateUI(bool &uiWindow, bool &hasChanges)
 {
     auto cpos = editor.GetCursorPosition();
     if (ImGui::BeginMainMenuBar())

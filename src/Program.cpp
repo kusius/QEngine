@@ -1,4 +1,3 @@
-#include <Platform/win64platform.h>
 #include <iostream>
 #include <string>
 #include <chrono>
@@ -14,10 +13,21 @@
 #include <Objects/Entity.h>
 #include <UI/UI.h>
 
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void ProcessInput(GLFWwindow *window, float deltaTime, Shader *hader, Shader *lightShader);
 void ShaderStaticData(Shader *shader, Shader *lightShader);
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+
+//Video properties
+static int targetRefreshRate;
+static double targetFrameTime;
+static bool sleepIsGranular = false;
+static unsigned int screenWidth = 800;
+static unsigned int screenHeight = 600;
 
 //mouse controls
 bool firstMouse = GL_TRUE;
@@ -47,7 +57,56 @@ vector<Entity> entities;
 bool uiWindow = GL_FALSE;
 bool uiWindowFocused = GL_FALSE;
 bool editorHasChanges = GL_FALSE;
-UI::UIInfo info = {};
+
+GLFWwindow *createWindow()
+{
+    GLFWwindow *window;
+    if (!glfwInit())
+        return NULL;
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    screenWidth = mode->width;
+    screenHeight = mode->height;
+    targetRefreshRate = 2 * mode->refreshRate;
+    targetFrameTime = 1.0 / targetRefreshRate;
+
+    /*
+    //Windowed Fullscreen
+    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+    window = glfwCreateWindow(mode->width, mode->height, "Q", glfwGetPrimaryMonitor(), nullptr);
+    */
+
+    //maximized window
+    //*
+    glfwWindowHint(GLFW_DECORATED, GL_TRUE);
+    glfwWindowHint(GLFW_MAXIMIZED, GL_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+    window = glfwCreateWindow(mode->width, mode->height, "Q", nullptr, nullptr);
+    //*/
+
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
+        std::cout << "Failed to init GLAD" << std::endl;
+        return NULL;
+    }
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetKeyCallback(window, key_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+
+    return window;
+}
 
 void SetupOpenGL()
 {
@@ -137,7 +196,6 @@ int main(int argc, char **argv)
     //*****************
     //MAIN LOOP
     //******************
-    glfwSetTime(0.0f);
     while (!glfwWindowShouldClose(window))
     {
 
@@ -155,7 +213,7 @@ int main(int argc, char **argv)
         pointLightPositions[1].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
 
         UI::NewFrame();
-        UI::UpdateUI(uiWindow, editorHasChanges, &info);
+        UI::UpdateUI(uiWindow, editorHasChanges);
         if (editorHasChanges)
         {
             std::cout << "Recompiling shaders" << std::endl;
@@ -188,26 +246,15 @@ int main(int argc, char **argv)
 
         UI::Render();
 
+        // NOTE(George): Fixed framerate:
+        // we let glfw sync with monitor refresh rate.
+        // If we want to implement a fixed framerate, we must switch to
+        // swapping buffers by ourselves
         glfwSwapBuffers(window);
         glfwPollEvents();
 
         thisTime = glfwGetTime();
         deltaTime = thisTime - startFrameTime;
-#if 1
-        if (deltaTime < targetFrameTime)
-        {
-
-            DWORD sleepMs = (DWORD)(1000 * (targetFrameTime - deltaTime));
-            Sleep(sleepMs);
-            thisTime = glfwGetTime();
-            deltaTime = thisTime - startFrameTime;
-        }
-        else
-        {
-            // TODO(George): We missed the framerate
-            std::cout << "Missed framerate" << std::endl;
-        }
-#endif
     }
 
     UI::Shutdown();
