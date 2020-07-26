@@ -133,11 +133,11 @@ void UI::UpdateUI(bool &uiWindow, bool &hasChanges, UI::UIInfo *info)
         }
         ImGui::End();
     }
+    ImGui::Render();
 }
 
 void UI::Render()
 {
-    ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
