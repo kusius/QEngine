@@ -26,9 +26,10 @@ Too much to enumerate!
 - Create scene configurations that can be saved and restored
 
 ## Rendering
-- Fixed framerate
+- ~~Fixed framerate~~
 - Skyboxes
 - Anti-aliasing
+- Texture filtering
 
 ## More 
 - Architecture of the engine, Entity system(?)

@@ -34,7 +34,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /nologo /Zi  /EHsc /wd4005 /
 add_executable(Q ${SOURCE_FILES})
 
 target_link_libraries(Q 
-                       opengl32 glfw3dll winmm
+                       opengl32 glfw3dll
                        debug zlibstaticd optimized zlibstatic
                        debug IrrXMLd optimized IrrXML
                        debug assimp-vc142-mtd optimized assimp-vc142-mt)
