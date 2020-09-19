@@ -17,14 +17,14 @@ using namespace std;
 class Model
 {
 public:
-	Model(char *path)
+	Model(const char *path)
 	{
 		loadModel(path);
 	}
 	void Draw(Shader *shader, Shader *highlightShader = nullptr);
+	vector<Mesh> meshes;
 
 protected:
-	vector<Mesh> meshes;
 	vector<Texture> textures_loaded;
 	unsigned int loadTextureFromFile(const char *file, const string &directory);
 

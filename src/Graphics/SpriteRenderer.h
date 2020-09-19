@@ -11,6 +11,9 @@
 #include "Texture.h"
 #include "Shader.h"
 
+// TODO: Add a new function that takes the GameObjects SOA and renders it to the screen
+// remember to send as much vertex data to the cpu at once as possible.
+// (Search how do we render multiple in OpenGL, buffers, texture buffers etc...)
 class Renderer
 {
 public:
@@ -30,6 +33,7 @@ public:
 	void DrawSprite(Texture2D &texture);
 
 	void DrawEntities(const std::vector<Entity> &entities);
+	void DrawGameObjects();
 
 private:
 	//Render state

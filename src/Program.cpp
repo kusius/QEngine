@@ -11,9 +11,9 @@
 
 #include <Camera.h>
 #include <ResourceManager.h>
+#include <Managers/EntityManager.h>
 #include <Graphics/SpriteRenderer.h>
 #include <Objects/Entity.h>
-#include <Objects/GameObjects.h>
 #include <UI/UI.h>
 
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
@@ -25,7 +25,7 @@ void ShaderStaticData(Shader *shader, Shader *lightShader);
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
-GameObjects gameObjects = {};
+Lights lights = {};
 
 //Video properties
 static int targetRefreshRate;
@@ -147,11 +147,11 @@ int main(int argc, char **argv)
     /*****************
     RESOURCE LOADING
     ******************/
-    gameObjects.nPointLights = 4; // this must be <= MAX_POINT_LIGHTS
-    gameObjects.pointLightPositions[0] = glm::vec3(1.7f, 0.2f, 2.0f);
-    gameObjects.pointLightPositions[1] = glm::vec3(2.3f, -3.3f, -4.0f);
-    gameObjects.pointLightPositions[2] = glm::vec3(-4.0f, 2.0f, -6.0f);
-    gameObjects.pointLightPositions[3] = glm::vec3(0.0f, 0.0f, -3.0f);
+    lights.nPointLights = 4; // this must be <= MAX_POINT_LIGHTS
+    lights.pointLightPositions[0] = glm::vec3(1.7f, 0.2f, 2.0f);
+    lights.pointLightPositions[1] = glm::vec3(2.3f, -3.3f, -4.0f);
+    lights.pointLightPositions[2] = glm::vec3(-4.0f, 2.0f, -6.0f);
+    lights.pointLightPositions[3] = glm::vec3(0.0f, 0.0f, -3.0f);
 
     //ResourceManager::LoadTexture("Assets/container2.png", false, "container");
     //ResourceManager::LoadTexture("Assets/container2_specular.png", false, "container_specular");
@@ -172,11 +172,14 @@ int main(int argc, char **argv)
 
     //Load models
     Entity e("Assets/models/table/scene.gltf");
+    EntityManager::Init();
+    EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+    EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 5.5f), glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(-0.9f, -0.9f, -0.9f));
 
     e.Move(glm::vec3(0.0f, -2.0f, 2.5f));
     e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
     e.Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    entities.push_back(e);
+    //entities.push_back(e);
 
     e = Entity("Assets/models/old_sofa/scene.gltf");
     e.Move(glm::vec3(0.0f, -2.0f, -1.5f));
@@ -210,10 +213,10 @@ int main(int argc, char **argv)
         projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
         view = camera.GetViewMatrix();
 
-        gameObjects.pointLightPositions[1].y = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
-        gameObjects.pointLightPositions[1].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
-        gameObjects.pointLightPositions[2].x = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
-        gameObjects.pointLightPositions[2].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
+        lights.pointLightPositions[1].y = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
+        lights.pointLightPositions[1].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
+        lights.pointLightPositions[2].x = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
+        lights.pointLightPositions[2].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
 
         UI::NewFrame();
         UI::UpdateUI(uiWindow, editorHasChanges);
@@ -230,8 +233,8 @@ int main(int argc, char **argv)
         shader->Use();
         shader->SetVector3f("spotLight.position", camera.Position);
         shader->SetVector3f("spotLight.direction", camera.Front);
-        shader->SetVector3f("pointLights[2].position", gameObjects.pointLightPositions[2]);
-        shader->SetVector3f("pointLights[1].position", gameObjects.pointLightPositions[1]);
+        shader->SetVector3f("pointLights[2].position", lights.pointLightPositions[2]);
+        shader->SetVector3f("pointLights[1].position", lights.pointLightPositions[1]);
         shader->SetVector3f("viewPos", camera.Position);
         shader->SetMatrix4("view", view);
         shader->SetMatrix4("projection", projection);
@@ -244,7 +247,7 @@ int main(int argc, char **argv)
         lightShader->Use();
         lightShader->SetMatrix4("view", view);
         lightShader->SetMatrix4("projection", projection);
-        lightRenderer->DrawPointLights(gameObjects.pointLightPositions, gameObjects.nPointLights, glm::vec3(0.2));
+        lightRenderer->DrawPointLights(lights.pointLightPositions, lights.nPointLights, glm::vec3(0.2));
 
         UI::Render();
 
@@ -284,11 +287,11 @@ void ShaderStaticData(Shader *shader, Shader *lightShader)
     shader->SetVector3f("dirLight.diffuse", glm::vec3(0.5f));  //darken the light a bit
     shader->SetVector3f("dirLight.specular", glm::vec3(1.0f)); //full white
 
-    for (unsigned int i = 0; i < gameObjects.nPointLights; i++)
+    for (unsigned int i = 0; i < lights.nPointLights; i++)
     {
         std::string number = std::to_string(i);
 
-        shader->SetVector3f(("pointLights[" + number + "].position").c_str(), gameObjects.pointLightPositions[i]);
+        shader->SetVector3f(("pointLights[" + number + "].position").c_str(), lights.pointLightPositions[i]);
         shader->SetVector3f(("pointLights[" + number + "].ambient").c_str(), glm::vec3(0.1f));
         shader->SetVector3f(("pointLights[" + number + "].diffuse").c_str(), glm::vec3(0.5f));
         shader->SetVector3f(("pointLights[" + number + "].specular").c_str(), glm::vec3(1.0f));

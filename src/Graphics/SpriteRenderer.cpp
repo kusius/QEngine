@@ -1,4 +1,5 @@
 #include "SpriteRenderer.h"
+#include <Managers/EntityManager.h>
 
 Renderer::Renderer(Shader &shader)
 {
@@ -218,5 +219,47 @@ void Renderer::DrawEntities(const std::vector<Entity> &entities)
 	for (Entity e : entities)
 	{
 		e.Draw(this->shader, this->highlightShader);
+	}
+}
+
+void Renderer::DrawGameObjects()
+{
+	GameObjects *gos = &(EntityManager::gameObjects);
+	Texture *textureP = &(EntityManager::gameObjects.textures[0]);
+
+	for (unsigned int i = 0; i < EntityManager::objectCount; i++)
+	{
+		unsigned int diffuseNr = 1;
+		unsigned int specularNr = 1;
+		unsigned int emissionNr = 1;
+		unsigned int normalNr = 1;
+		for (unsigned int j = 0; j < gos->numMeshes[i]; j++)
+		{
+			/* Bind the appropriate textures for this mesh */
+			for (unsigned int k = 0; k < gos->numTextures[i]; k++)
+			{
+				glActiveTexture(GL_TEXTURE0 + k);
+				string number;
+				string name = textureP->type;
+				if (name == "texture_diffuse")
+					number = std::to_string(diffuseNr++);
+				else if (name == "texture_specular")
+					number = std::to_string(specularNr++);
+				else if (name == "texture_emission")
+					number = std::to_string(emissionNr++);
+				else if (name == "texture_normal")
+					number = std::to_string(normalNr++);
+
+				shader->Use();
+				shader->SetInteger(("material." + name + number).c_str(), i);
+				shader->SetFloat("material.shininess", 32.0f);
+				glBindTexture(GL_TEXTURE_2D, textureP->id);
+				textureP++;
+			}
+			/* Draw the mesh using the vertex and index information */
+			// TODO(): Generate the VAO, VBO and EBO somewhere else (see setupMesh)
+			// and then use them here to do the draw call
+			// glBindVertexArray and glDrawElements with indices
+		}
 	}
 }

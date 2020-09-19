@@ -18,6 +18,7 @@ UI/TextEditor.cpp
 set(SOURCE_FILES
 Program.cpp
 ResourceManager.cpp
+Managers/EntityManager.cpp
 Thirdparty/glad.c
 ${GRAPHICS_SOURCE_FILES}
 ${UI_SOURCE_FILES}
