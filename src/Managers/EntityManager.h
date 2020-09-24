@@ -3,6 +3,8 @@
 
 #include <Objects/GameObjects.h>
 
+using namespace std;
+
 class EntityManager
 {
 public:

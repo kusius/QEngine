@@ -42,6 +42,7 @@ void EntityManager::ImportModelFromFile(const char *path)
 
 void EntityManager::TransformModel(unsigned int id, glm::vec3 position, glm::vec3 rotation, glm::vec3 scale)
 {
+    // TODO: Check if object with given id exists before indexing the array
     glm::mat4 transform = glm::mat4(1.0);
     transform = glm::translate(transform, position);
     transform = glm::rotate(transform, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));

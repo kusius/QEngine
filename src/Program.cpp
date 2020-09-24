@@ -171,24 +171,32 @@ int main(int argc, char **argv)
     ShaderStaticData(shader, lightShader);
 
     //Load models
-    Entity e("Assets/models/table/scene.gltf");
+    
     EntityManager::Init();
     EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
     EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 5.5f), glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(-0.9f, -0.9f, -0.9f));
 
-    e.Move(glm::vec3(0.0f, -2.0f, 2.5f));
-    e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
-    e.Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    //entities.push_back(e);
+    
+    
 
-    e = Entity("Assets/models/old_sofa/scene.gltf");
-    e.Move(glm::vec3(0.0f, -2.0f, -1.5f));
-    entities.push_back(e);
+    //e = Entity("Assets/models/old_sofa/scene.gltf");
+    //e.Move(glm::vec3(0.0f, -2.0f, -1.5f));
+    //entities.push_back(e);
 
     //************SETUP RENDERER OBJECTS ***********
     Renderer *renderer, *lightRenderer;
     renderer = new Renderer(*shader, *highlightShader);
     lightRenderer = new Renderer(*lightShader);
+
+    renderer->SetupMeshes();
+    
+    Entity e("Assets/models/table/scene.gltf");
+    e.Move(glm::vec3(0.0f, -2.0f, 2.5f));
+    e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
+    e.Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    entities.push_back(e);
+
+    
 
     double thisTime = 0.0;
     double deltaTime = 0.0;
@@ -243,6 +251,7 @@ int main(int argc, char **argv)
         highlightShader->SetMatrix4("view", view);
         highlightShader->SetMatrix4("projection", projection);
         renderer->DrawEntities(entities);
+        renderer->DrawGameObjects();
 
         lightShader->Use();
         lightShader->SetMatrix4("view", view);

@@ -226,17 +226,23 @@ void Renderer::DrawGameObjects()
 {
 	GameObjects *gos = &(EntityManager::gameObjects);
 	Texture *textureP = &(EntityManager::gameObjects.textures[0]);
-
+	
+	
+	
 	for (unsigned int i = 0; i < EntityManager::objectCount; i++)
 	{
-		unsigned int diffuseNr = 1;
-		unsigned int specularNr = 1;
-		unsigned int emissionNr = 1;
-		unsigned int normalNr = 1;
+		shader->Use();
+		shader->SetMatrix4("model", gos->modelMatrices[i]);
+		
+		// Draw each mesh of this object
 		for (unsigned int j = 0; j < gos->numMeshes[i]; j++)
 		{
+			unsigned int diffuseNr = 1;
+			unsigned int specularNr = 1;
+			unsigned int emissionNr = 1;
+			unsigned int normalNr = 1;
 			/* Bind the appropriate textures for this mesh */
-			for (unsigned int k = 0; k < gos->numTextures[i]; k++)
+			for (unsigned int k = 0; k < gos->numTextures[j]; k++)
 			{
 				glActiveTexture(GL_TEXTURE0 + k);
 				string number;
@@ -250,16 +256,71 @@ void Renderer::DrawGameObjects()
 				else if (name == "texture_normal")
 					number = std::to_string(normalNr++);
 
-				shader->Use();
 				shader->SetInteger(("material." + name + number).c_str(), i);
 				shader->SetFloat("material.shininess", 32.0f);
 				glBindTexture(GL_TEXTURE_2D, textureP->id);
 				textureP++;
 			}
+			glActiveTexture(GL_TEXTURE0);
 			/* Draw the mesh using the vertex and index information */
 			// TODO(): Generate the VAO, VBO and EBO somewhere else (see setupMesh)
 			// and then use them here to do the draw call
 			// glBindVertexArray and glDrawElements with indices
+			unsigned int numIndices = gos->numIndices[j+i];
+			unsigned int baseIndex = 0;
+			if (j > 0)
+				baseIndex = gos->numIndices[j-1];
+			unsigned int baseVertex = 0;
+			if (j > 0)
+				baseVertex = gos->numVertices[j-1];
+			
+			glBindVertexArray(VAO);
+			// TODO: the correct call is to use 
+			//glMultiDrawArrays(GL_TRIANGLES, &gos->indices[baseIndex], &gos->numIndices[j], )
+			// void glMultiDrawArrays(	GLenum mode,
+ 			//const GLint * first, // pointer to the fist index within the indices array
+ 			//const GLsizei * count, // pointer to the first count of indices
+ 			//GLsizei drawcount); // the length of the fist and count arrays to use
+
+			//glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,(void*)baseIndex);
+			glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
+									(void*)(baseIndex*sizeof(unsigned int)), baseVertex);
+			glBindVertexArray(0);
 		}
 	}
+}
+
+void Renderer::SetupMeshes()
+{
+	unsigned int numVertices = EntityManager::gameObjects.vertices.size();
+	unsigned int numIndices = EntityManager::gameObjects.indices.size();
+
+
+	glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+	// bind a buffer and fill it with vertex data for ALL meshes (accross ALL gameobjects)
+	glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vertex), &EntityManager::gameObjects.vertices[0], GL_STATIC_DRAW);
+
+	// bind a buffer and fill it with index data for ALL meshes (accross ALL gameobjects)
+	glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(unsigned int), &EntityManager::gameObjects.indices[0], GL_STATIC_DRAW);
+
+    //vertex positions
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
+    //vertex normals
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, Normal));
+    //texture ccordinates
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, TexCoords));
+    //tangent space
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, Tangent));
+
+    glBindVertexArray(0);
 }

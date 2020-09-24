@@ -34,12 +34,14 @@ public:
 
 	void DrawEntities(const std::vector<Entity> &entities);
 	void DrawGameObjects();
+	void SetupMeshes();
 
 private:
 	//Render state
 	Shader *shader;
 	Shader *highlightShader;
 	GLuint quadVAO;
+	GLuint VAO, EBO, VBO;
 	//Inits and configures the quad's buffer and vertex attributes
 	void initRenderData();
 };
