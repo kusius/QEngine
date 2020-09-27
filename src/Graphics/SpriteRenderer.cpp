@@ -224,9 +224,12 @@ void Renderer::DrawEntities(const std::vector<Entity> &entities)
 
 void Renderer::DrawGameObjects()
 {
+	glBindVertexArray(VAO);
 	GameObjects *gos = &(EntityManager::gameObjects);
 	Texture *textureP = &(EntityManager::gameObjects.textures[0]);
-	
+	unsigned int meshIndex = 0;
+	unsigned int textureIndex = 0;
+
 	
 	
 	for (unsigned int i = 0; i < EntityManager::objectCount; i++)
@@ -235,18 +238,19 @@ void Renderer::DrawGameObjects()
 		shader->SetMatrix4("model", gos->modelMatrices[i]);
 		
 		// Draw each mesh of this object
-		for (unsigned int j = 0; j < gos->numMeshes[i]; j++)
+		unsigned int numMeshes = gos->numMeshes[i];
+		for (unsigned int j = 0; j < numMeshes; j++)
 		{
 			unsigned int diffuseNr = 1;
 			unsigned int specularNr = 1;
 			unsigned int emissionNr = 1;
 			unsigned int normalNr = 1;
-			/* Bind the appropriate textures for this mesh */
-			for (unsigned int k = 0; k < gos->numTextures[j]; k++)
+			// Bind the appropriate textures for this mesh
+			for (unsigned int k = 0; k < gos->numTextures[meshIndex]; k++)
 			{
 				glActiveTexture(GL_TEXTURE0 + k);
 				string number;
-				string name = textureP->type;
+				string name = gos->textures[textureIndex].type;
 				if (name == "texture_diffuse")
 					number = std::to_string(diffuseNr++);
 				else if (name == "texture_specular")
@@ -256,17 +260,16 @@ void Renderer::DrawGameObjects()
 				else if (name == "texture_normal")
 					number = std::to_string(normalNr++);
 
-				shader->SetInteger(("material." + name + number).c_str(), i);
+				shader->Use();
+				shader->SetInteger(("material." + name + number).c_str(), k);
 				shader->SetFloat("material.shininess", 32.0f);
-				glBindTexture(GL_TEXTURE_2D, textureP->id);
-				textureP++;
+				glBindTexture(GL_TEXTURE_2D, gos->textures[textureIndex].id);
+				textureIndex++;
 			}
 			glActiveTexture(GL_TEXTURE0);
-			/* Draw the mesh using the vertex and index information */
-			// TODO(): Generate the VAO, VBO and EBO somewhere else (see setupMesh)
-			// and then use them here to do the draw call
-			// glBindVertexArray and glDrawElements with indices
-			unsigned int numIndices = gos->numIndices[j+i];
+			
+		
+			unsigned int numIndices = gos->numIndices[meshIndex];
 			unsigned int baseIndex = 0;
 			if (j > 0)
 				baseIndex = gos->numIndices[j-1];
@@ -274,20 +277,15 @@ void Renderer::DrawGameObjects()
 			if (j > 0)
 				baseVertex = gos->numVertices[j-1];
 			
-			glBindVertexArray(VAO);
-			// TODO: the correct call is to use 
-			//glMultiDrawArrays(GL_TRIANGLES, &gos->indices[baseIndex], &gos->numIndices[j], )
-			// void glMultiDrawArrays(	GLenum mode,
- 			//const GLint * first, // pointer to the fist index within the indices array
- 			//const GLsizei * count, // pointer to the first count of indices
- 			//GLsizei drawcount); // the length of the fist and count arrays to use
-
-			//glDrawElements(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,(void*)baseIndex);
+			
 			glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
 									(void*)(baseIndex*sizeof(unsigned int)), baseVertex);
-			glBindVertexArray(0);
+			
+
+			meshIndex++;
 		}
 	}
+	glBindVertexArray(0);
 }
 
 void Renderer::SetupMeshes()

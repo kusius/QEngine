@@ -27,6 +27,9 @@ struct GameObjects
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
     std::vector<Texture> textures;
+    std::vector<glm::vec3> positions;
+    std::vector<glm::vec3> scales;
+    std::vector<glm::vec3> angles;
 };
 
 #endif //GAME_OBJECTS_H

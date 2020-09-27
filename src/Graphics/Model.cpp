@@ -94,7 +94,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
             indices.push_back(face.mIndices[j]);
     }
 
-    //Process material (Textures: diffuse, specular, emission maps)
+    //Process material (Textures: diffuse, specular, emission, normal maps)
     if (mesh->mMaterialIndex >= 0)
     {
         aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
@@ -187,7 +187,7 @@ unsigned int Model::loadTextureFromFile(const char *file, const string &director
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     //unbind the texture
     glBindTexture(GL_TEXTURE_2D, 0);
-
+    
     stbi_image_free(image);
     return id;
 }
