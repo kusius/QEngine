@@ -270,15 +270,12 @@ void Renderer::DrawGameObjects()
 			glActiveTexture(GL_TEXTURE0);
 		
 			unsigned int numIndices = gos->numIndices[meshIndex];
-			//unsigned int baseIndex  = (j > 0) ? gos->numIndices[j-1] : 0;
-			//unsigned int baseVertex = (j > 0) ? gos->numIndices[j-1] : 0;
 			
 			glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
 									(void*)(baseIndex*sizeof(unsigned int)), baseVertex);
 			
-			
-				baseIndex += gos->numIndices[meshIndex];
-				baseVertex += gos->numVertices[meshIndex];
+			baseIndex += gos->numIndices[meshIndex];
+			baseVertex += gos->numVertices[meshIndex];
 			
 			meshIndex++;
 		}
