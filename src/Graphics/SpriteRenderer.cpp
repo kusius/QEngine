@@ -226,12 +226,11 @@ void Renderer::DrawGameObjects()
 {
 	glBindVertexArray(VAO);
 	GameObjects *gos = &(EntityManager::gameObjects);
-	Texture *textureP = &(EntityManager::gameObjects.textures[0]);
 	unsigned int meshIndex = 0;
 	unsigned int textureIndex = 0;
+	unsigned int baseIndex = 0;
+	unsigned int baseVertex = 0;
 
-	
-	
 	for (unsigned int i = 0; i < EntityManager::objectCount; i++)
 	{
 		shader->Use();
@@ -239,6 +238,7 @@ void Renderer::DrawGameObjects()
 		
 		// Draw each mesh of this object
 		unsigned int numMeshes = gos->numMeshes[i];
+		
 		for (unsigned int j = 0; j < numMeshes; j++)
 		{
 			unsigned int diffuseNr = 1;
@@ -246,6 +246,7 @@ void Renderer::DrawGameObjects()
 			unsigned int emissionNr = 1;
 			unsigned int normalNr = 1;
 			// Bind the appropriate textures for this mesh
+			
 			for (unsigned int k = 0; k < gos->numTextures[meshIndex]; k++)
 			{
 				glActiveTexture(GL_TEXTURE0 + k);
@@ -267,21 +268,18 @@ void Renderer::DrawGameObjects()
 				textureIndex++;
 			}
 			glActiveTexture(GL_TEXTURE0);
-			
 		
 			unsigned int numIndices = gos->numIndices[meshIndex];
-			unsigned int baseIndex = 0;
-			if (j > 0)
-				baseIndex = gos->numIndices[j-1];
-			unsigned int baseVertex = 0;
-			if (j > 0)
-				baseVertex = gos->numVertices[j-1];
-			
+			//unsigned int baseIndex  = (j > 0) ? gos->numIndices[j-1] : 0;
+			//unsigned int baseVertex = (j > 0) ? gos->numIndices[j-1] : 0;
 			
 			glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
 									(void*)(baseIndex*sizeof(unsigned int)), baseVertex);
 			
-
+			
+				baseIndex += gos->numIndices[meshIndex];
+				baseVertex += gos->numVertices[meshIndex];
+			
 			meshIndex++;
 		}
 	}

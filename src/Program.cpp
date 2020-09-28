@@ -175,8 +175,8 @@ int main(int argc, char **argv)
     EntityManager::Init();
     EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
     EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
-    //EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
     EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 5.5f), glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(0.1f, 0.1f, 0.1f));
+    EntityManager::TransformModel(1, glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.4f));
     //EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 5.5f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(-0.9f, -0.9f, -0.9f));
     
     
