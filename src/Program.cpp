@@ -153,14 +153,7 @@ int main(int argc, char **argv)
     lights.pointLightPositions[2] = glm::vec3(-4.0f, 2.0f, -6.0f);
     lights.pointLightPositions[3] = glm::vec3(0.0f, 0.0f, -3.0f);
 
-    //ResourceManager::LoadTexture("Assets/container2.png", false, "container");
-    //ResourceManager::LoadTexture("Assets/container2_specular.png", false, "container_specular");
-    //ResourceManager::LoadTexture("Assets/matrix.jpg", false, "container_emission");
-    //Texture2D diffusemap = ResourceManager::GetTexture("container");
-    //Texture2D specularmap = ResourceManager::GetTexture("container_specular");
-    //Texture2D emissionmap = ResourceManager::GetTexture("container_emission");
-
-    //Make our shaders (read, compile, link)
+    // Make our shaders (read, compile, link)
     ResourceManager::LoadShader("Assets/Shaders/shader.vert", "Assets/Shaders/lightingshader.frag", nullptr, "shader");
     ResourceManager::LoadShader("Assets/Shaders/lampshader.vert", "Assets/Shaders/lampshader.frag", nullptr, "lampshader");
     ResourceManager::LoadShader("Assets/Shaders/shader.vert", "Assets/Shaders/diffusecolor.frag", nullptr, "highlight");
@@ -170,28 +163,28 @@ int main(int argc, char **argv)
 
     ShaderStaticData(shader, lightShader);
 
+    // Setup renderers
+    Renderer *renderer, *lightRenderer;
+    renderer = new Renderer(*shader, *highlightShader);
+    lightRenderer = new Renderer(*lightShader);
     //Load models
     
     EntityManager::Init();
     EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
     EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
-    EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 5.5f), glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(0.1f, 0.1f, 0.1f));
-    EntityManager::TransformModel(1, glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.4f));
-    //EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 5.5f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(-0.9f, -0.9f, -0.9f));
-    
-    
+    EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+    EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 2.5f), glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(0.1f));
+    EntityManager::TransformModel(1, glm::vec3(0.0f, -2.0f, -1.5f));
+    EntityManager::TransformModel(2, glm::vec3(0.0f, -2.0f, 6.5f), glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(0.1f));
 
-    Entity e = Entity("Assets/models/table/scene.gltf");
-    e.Move(glm::vec3(0.0f, 0.0f, -1.5f));
-    e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
-    entities.push_back(e);
-
-    //************SETUP RENDERER OBJECTS ***********
-    Renderer *renderer, *lightRenderer;
-    renderer = new Renderer(*shader, *highlightShader);
-    lightRenderer = new Renderer(*lightShader);
-
+    // renderer prepares data based on current gameObjects SOA
     renderer->SetupMeshes();
+
+    //Entity e = Entity("Assets/models/table/scene.gltf");
+    //e.Move(glm::vec3(0.0f, 0.0f, -1.5f));
+    //e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
+    //entities.push_back(e);
+    
     /*
     Entity e("Assets/models/table/scene.gltf");
     e.Move(glm::vec3(0.0f, -2.0f, 2.5f));
@@ -199,8 +192,6 @@ int main(int argc, char **argv)
     e.Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     entities.push_back(e);
     */
-
-    
 
     double thisTime = 0.0;
     double deltaTime = 0.0;
@@ -255,7 +246,6 @@ int main(int argc, char **argv)
         highlightShader->SetMatrix4("view", view);
         highlightShader->SetMatrix4("projection", projection);
 
-        renderer->DrawEntities(entities);
         renderer->DrawGameObjects();
 
         lightShader->Use();
@@ -265,7 +255,7 @@ int main(int argc, char **argv)
 
         UI::Render();
 
-        // NOTE(George): Fixed framerate:
+        // TODO(George): Fixed framerate:
         // we let glfw sync with monitor refresh rate.
         // If we want to implement a fixed framerate, we must switch to
         // swapping buffers by ourselves(?)

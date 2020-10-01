@@ -43,6 +43,14 @@ void EntityManager::ImportModelFromFile(const char *path)
     objectCount++;
 }
 
+/**
+ * @brief Transform one of the models stored in EntityManager::gameObjects SOA
+ * 
+ * @param id The unique id given to the object on import ( @ref EntityManager::ImportModelFromFile) 
+ * @param move the amount of units to translate in x, y, z 
+ * @param rotation the amount of degrees to rotate around x, y, z axes
+ * @param scale the amount to scale as a percentage of the original scale in x, y, z
+ */
 void EntityManager::TransformModel(unsigned int id, glm::vec3 move, glm::vec3 rotation, glm::vec3 scale)
 {
     //
@@ -51,12 +59,10 @@ void EntityManager::TransformModel(unsigned int id, glm::vec3 move, glm::vec3 ro
     EntityManager::gameObjects.scales[id] = scale; 
     // TODO: Check if object with given id exists before indexing the array
     glm::mat4 transform = glm::mat4(1.0);
-    /*
     transform = glm::translate(transform, move);
     transform = glm::rotate(transform, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
     transform = glm::rotate(transform, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
     transform = glm::rotate(transform, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-    */
     transform = glm::scale(transform, scale);
     EntityManager::gameObjects.modelMatrices[id] = transform;
 }
