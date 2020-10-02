@@ -168,7 +168,7 @@ int main(int argc, char **argv)
     renderer = new Renderer(*shader, *highlightShader);
     lightRenderer = new Renderer(*lightShader);
     //Load models
-    
+
     EntityManager::Init();
     EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
     EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
     //e.Move(glm::vec3(0.0f, 0.0f, -1.5f));
     //e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
     //entities.push_back(e);
-    
+
     /*
     Entity e("Assets/models/table/scene.gltf");
     e.Move(glm::vec3(0.0f, -2.0f, 2.5f));

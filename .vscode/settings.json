@@ -1,5 +1,6 @@
 {
     "cmake.sourceDirectory": "${workspaceFolder}/src",
+    "editor.formatOnSave": true,
     "files.associations": {
         "vector": "cpp",
         "xstring": "cpp",
