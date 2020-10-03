@@ -1,7 +1,9 @@
+#ifdef _WIN32
+#include <Platform/Win64Platform.h>
+#endif
+
 #include <iostream>
 #include <string>
-#include <chrono>
-#include <thread>
 
 #include <Thirdparty/glad/glad.h>
 #include <Thirdparty/glfw/glfw3.h>
@@ -9,56 +11,51 @@
 
 #include <Camera.h>
 #include <ResourceManager.h>
+#include <Managers/EntityManager.h>
 #include <Graphics/SpriteRenderer.h>
 #include <Objects/Entity.h>
 #include <UI/UI.h>
 
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode);
-void mouse_callback(GLFWwindow *window, double xpos, double ypos);
-void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
-void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
+void MouseCallback(GLFWwindow *window, double xpos, double ypos);
+void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
+void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
 void ProcessInput(GLFWwindow *window, float deltaTime, Shader *hader, Shader *lightShader);
 void ShaderStaticData(Shader *shader, Shader *lightShader);
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
+Lights lights = {};
+
 //Video properties
 static int targetRefreshRate;
 static double targetFrameTime;
-static bool sleepIsGranular = false;
 static unsigned int screenWidth = 800;
 static unsigned int screenHeight = 600;
 
 //mouse controls
-bool firstMouse = GL_TRUE;
-bool mouseAffectsCamera = GL_TRUE;
-bool disableMouse = GL_FALSE;
+bool firstMouse = true;
+bool mouseAffectsCamera = true;
+bool disableMouse = false;
 float lastX = (float)screenWidth / 2;
 float lastY = (float)screenHeight / 2;
 
 //keyboard states (https://www.glfw.org/docs/latest/group__keys.html)
 //TODO(George): Consider an InputManager class
-bool key_states[512] = {GL_FALSE};
+bool key_states[512] = {false};
 
 //light position
 glm::vec3 lightPos(1.2, 1.0f, 2.0f); //in global space coordinates
-
-//************* POINT LIGHT(S) **************
-glm::vec3 pointLightPositions[] = {
-    glm::vec3(1.7f, 0.2f, 2.0f),
-    glm::vec3(2.3f, -3.3f, -4.0f),
-    glm::vec3(-4.0f, 2.0f, -6.0f),
-    glm::vec3(0.0f, 0.0f, -3.0f)};
 
 //************ENTITIES***********//
 //TODO(George): Consider merging these into ResourceManager
 vector<Entity> entities;
 
-bool uiWindow = GL_FALSE;
-bool uiWindowFocused = GL_FALSE;
-bool editorHasChanges = GL_FALSE;
+bool uiWindow = false;
+bool uiWindowFocused = true;
+bool editorHasChanges = false;
 
-GLFWwindow *createWindow()
+GLFWwindow *QCreateWindow()
 {
     GLFWwindow *window;
     if (!glfwInit())
@@ -84,9 +81,9 @@ GLFWwindow *createWindow()
 
     //maximized window
     //*
-    glfwWindowHint(GLFW_DECORATED, GL_TRUE);
-    glfwWindowHint(GLFW_MAXIMIZED, GL_TRUE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
+    glfwWindowHint(GLFW_DECORATED, true);
+    glfwWindowHint(GLFW_MAXIMIZED, true);
+    glfwWindowHint(GLFW_RESIZABLE, true);
     window = glfwCreateWindow(mode->width, mode->height, "Q", nullptr, nullptr);
     //*/
 
@@ -100,10 +97,10 @@ GLFWwindow *createWindow()
     }
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    //glfwSetKeyCallback(window, key_callback);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
+    //glfwSetKeyCallback(window, KeyCallback);
+    glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+    glfwSetCursorPosCallback(window, MouseCallback);
+    glfwSetScrollCallback(window, ScrollCallback);
 
     return window;
 }
@@ -130,8 +127,7 @@ void PrintLibVersions()
 
 int main(int argc, char **argv)
 {
-
-    GLFWwindow *window = createWindow();
+    GLFWwindow *window = QCreateWindow();
     if (!window)
         return -1;
 
@@ -151,14 +147,13 @@ int main(int argc, char **argv)
     /*****************
     RESOURCE LOADING
     ******************/
-    //ResourceManager::LoadTexture("Assets/container2.png", GL_FALSE, "container");
-    //ResourceManager::LoadTexture("Assets/container2_specular.png", GL_FALSE, "container_specular");
-    //ResourceManager::LoadTexture("Assets/matrix.jpg", GL_FALSE, "container_emission");
-    //Texture2D diffusemap = ResourceManager::GetTexture("container");
-    //Texture2D specularmap = ResourceManager::GetTexture("container_specular");
-    //Texture2D emissionmap = ResourceManager::GetTexture("container_emission");
+    lights.nPointLights = 4; // this must be <= MAX_POINT_LIGHTS
+    lights.pointLightPositions[0] = glm::vec3(1.7f, 0.2f, 2.0f);
+    lights.pointLightPositions[1] = glm::vec3(2.3f, -3.3f, -4.0f);
+    lights.pointLightPositions[2] = glm::vec3(-4.0f, 2.0f, -6.0f);
+    lights.pointLightPositions[3] = glm::vec3(0.0f, 0.0f, -3.0f);
 
-    //Make our shaders (read, compile, link)
+    // Make our shaders (read, compile, link)
     ResourceManager::LoadShader("Assets/Shaders/shader.vert", "Assets/Shaders/lightingshader.frag", nullptr, "shader");
     ResourceManager::LoadShader("Assets/Shaders/lampshader.vert", "Assets/Shaders/lampshader.frag", nullptr, "lampshader");
     ResourceManager::LoadShader("Assets/Shaders/shader.vert", "Assets/Shaders/diffusecolor.frag", nullptr, "highlight");
@@ -168,28 +163,43 @@ int main(int argc, char **argv)
 
     ShaderStaticData(shader, lightShader);
 
+    // Setup renderers
+    Renderer *renderer, *lightRenderer;
+    renderer = new Renderer(*shader, *highlightShader);
+    lightRenderer = new Renderer(*lightShader);
     //Load models
-    Entity e("Assets/models/table/scene.gltf");
 
+    EntityManager::Init();
+    EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+    EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
+    EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+    EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 2.5f), glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(0.1f));
+    EntityManager::TransformModel(1, glm::vec3(0.0f, -2.0f, -1.5f));
+    EntityManager::TransformModel(2, glm::vec3(0.0f, -2.0f, 6.5f), glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(0.1f));
+
+    // renderer prepares data based on current gameObjects SOA
+    renderer->SetupMeshes();
+
+    //Entity e = Entity("Assets/models/table/scene.gltf");
+    //e.Move(glm::vec3(0.0f, 0.0f, -1.5f));
+    //e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
+    //entities.push_back(e);
+
+    /*
+    Entity e("Assets/models/table/scene.gltf");
     e.Move(glm::vec3(0.0f, -2.0f, 2.5f));
     e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
     e.Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
     entities.push_back(e);
-
-    e = Entity("Assets/models/old_sofa/scene.gltf");
-    e.Move(glm::vec3(0.0f, -2.0f, -1.5f));
-    entities.push_back(e);
-
-    //************SETUP RENDERER OBJECTS ***********
-    Renderer *renderer, *lightRenderer;
-    renderer = new Renderer(*shader, *highlightShader);
-    lightRenderer = new Renderer(*lightShader);
+    */
 
     double thisTime = 0.0;
     double deltaTime = 0.0;
     double startFrameTime = 0.0;
     double endFrameTime = 0.0;
     float rotateSpeed = 10.0f;
+    int64_t hdStartTime = 0;
+    int64_t hdEndTime = 0;
 
     UI::SetupContext(window);
     UI::ShaderEditorOpenFile("Assets/Shaders/lightingshader.frag");
@@ -198,28 +208,26 @@ int main(int argc, char **argv)
     //******************
     while (!glfwWindowShouldClose(window))
     {
-
         startFrameTime = glfwGetTime();
+        hdStartTime = Platform::GetWallClockTime();
 
         ProcessInput(window, (float)deltaTime, shader, lightShader);
 
         projection = glm::perspective(glm::radians(camera.Zoom), (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
         view = camera.GetViewMatrix();
 
-        pointLightPositions[2].x = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
-        pointLightPositions[2].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
-
-        pointLightPositions[1].y = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
-        pointLightPositions[1].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
+        lights.pointLightPositions[1].y = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
+        lights.pointLightPositions[1].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
+        lights.pointLightPositions[2].x = 6.0 * cos(rotateSpeed * glm::radians(startFrameTime));
+        lights.pointLightPositions[2].z = 6.0 * sin(rotateSpeed * glm::radians(startFrameTime));
 
         UI::NewFrame();
         UI::UpdateUI(uiWindow, editorHasChanges);
         if (editorHasChanges)
         {
-            std::cout << "Recompiling shaders" << std::endl;
             ResourceManager::RecompileShaders();
             ShaderStaticData(shader, lightShader);
-            editorHasChanges = GL_FALSE;
+            editorHasChanges = false;
         }
         uiWindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
 
@@ -228,8 +236,8 @@ int main(int argc, char **argv)
         shader->Use();
         shader->SetVector3f("spotLight.position", camera.Position);
         shader->SetVector3f("spotLight.direction", camera.Front);
-        shader->SetVector3f("pointLights[2].position", pointLightPositions[2]);
-        shader->SetVector3f("pointLights[1].position", pointLightPositions[1]);
+        shader->SetVector3f("pointLights[2].position", lights.pointLightPositions[2]);
+        shader->SetVector3f("pointLights[1].position", lights.pointLightPositions[1]);
         shader->SetVector3f("viewPos", camera.Position);
         shader->SetMatrix4("view", view);
         shader->SetMatrix4("projection", projection);
@@ -237,24 +245,27 @@ int main(int argc, char **argv)
         highlightShader->Use();
         highlightShader->SetMatrix4("view", view);
         highlightShader->SetMatrix4("projection", projection);
-        renderer->DrawEntities(entities);
+
+        renderer->DrawGameObjects();
 
         lightShader->Use();
         lightShader->SetMatrix4("view", view);
         lightShader->SetMatrix4("projection", projection);
-        lightRenderer->DrawPointLights(pointLightPositions, 4, glm::vec3(0.2));
+        lightRenderer->DrawPointLights(lights.pointLightPositions, lights.nPointLights, glm::vec3(0.2));
 
         UI::Render();
 
-        // NOTE(George): Fixed framerate:
+        // TODO(George): Fixed framerate:
         // we let glfw sync with monitor refresh rate.
         // If we want to implement a fixed framerate, we must switch to
-        // swapping buffers by ourselves
+        // swapping buffers by ourselves(?)
         glfwSwapBuffers(window);
         glfwPollEvents();
 
         thisTime = glfwGetTime();
         deltaTime = thisTime - startFrameTime;
+        hdEndTime = Platform::GetWallClockTime();
+        //std::cout << "Frame time: " << (float)Platform::DiffTimeMilliseconds(hdStartTime, hdEndTime) << std::endl;
     }
 
     UI::Shutdown();
@@ -280,11 +291,11 @@ void ShaderStaticData(Shader *shader, Shader *lightShader)
     shader->SetVector3f("dirLight.diffuse", glm::vec3(0.5f));  //darken the light a bit
     shader->SetVector3f("dirLight.specular", glm::vec3(1.0f)); //full white
 
-    for (unsigned int i = 0; i < 4; i++)
+    for (unsigned int i = 0; i < lights.nPointLights; i++)
     {
         std::string number = std::to_string(i);
 
-        shader->SetVector3f(("pointLights[" + number + "].position").c_str(), pointLightPositions[i]);
+        shader->SetVector3f(("pointLights[" + number + "].position").c_str(), lights.pointLightPositions[i]);
         shader->SetVector3f(("pointLights[" + number + "].ambient").c_str(), glm::vec3(0.1f));
         shader->SetVector3f(("pointLights[" + number + "].diffuse").c_str(), glm::vec3(0.5f));
         shader->SetVector3f(("pointLights[" + number + "].specular").c_str(), glm::vec3(1.0f));
@@ -302,27 +313,27 @@ void ShaderStaticData(Shader *shader, Shader *lightShader)
 }
 
 //NOTE(George): Callback way is not used right now, we process input at the beginning of a frame
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mode)
+void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
+        glfwSetWindowShouldClose(window, true);
 }
 
 inline bool ProcessKeyTap(int key_code, GLFWwindow *window)
 {
-    bool ret = GL_FALSE;
+    bool ret = false;
     if (key_code < 0)
         return ret;
     if (glfwGetKey(window, key_code) == GLFW_PRESS &&
         !key_states[key_code])
     {
-        key_states[key_code] = GL_TRUE;
-        ret = GL_TRUE;
+        key_states[key_code] = true;
+        ret = true;
     }
     else if (glfwGetKey(window, key_code) != GLFW_PRESS)
     {
-        key_states[key_code] = GL_FALSE;
-        ret = GL_FALSE;
+        key_states[key_code] = false;
+        ret = false;
     }
     return ret;
 }
@@ -336,12 +347,12 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader, Shader *l
         if (uiWindow)
         {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            mouseAffectsCamera = GL_FALSE;
+            mouseAffectsCamera = false;
         }
         else
         {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            mouseAffectsCamera = GL_TRUE;
+            mouseAffectsCamera = true;
         }
     }
 
@@ -366,9 +377,9 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader, Shader *l
         }
         if (ProcessKeyTap(GLFW_KEY_P, window))
         {
-            GLint polygonMode[2];
-            glGetIntegerv(GL_POLYGON_MODE, polygonMode);
-            if (polygonMode[1] == GL_LINE)
+            GLint polygonMode;
+            glGetIntegerv(GL_POLYGON_MODE, &polygonMode);
+            if (polygonMode == GL_LINE)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             else
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -386,23 +397,23 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader, Shader *l
         if (status == GLFW_CURSOR_DISABLED)
         {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            mouseAffectsCamera = GL_FALSE;
+            mouseAffectsCamera = false;
         }
         else
         {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            mouseAffectsCamera = GL_TRUE;
+            mouseAffectsCamera = true;
         }
     }
 }
 
-void mouse_callback(GLFWwindow *window, double xpos, double ypos)
+void MouseCallback(GLFWwindow *window, double xpos, double ypos)
 {
     if (firstMouse)
     {
         lastX = xpos;
         lastY = ypos;
-        firstMouse = GL_FALSE;
+        firstMouse = false;
     }
     float dx = xpos - lastX;
     float dy = lastY - ypos;
@@ -414,17 +425,17 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos)
         dx *= camera.MouseSensitivity;
         dy *= camera.MouseSensitivity;
 
-        camera.ProcessMouseMovement(dx, dy, GL_TRUE);
+        camera.ProcessMouseMovement(dx, dy, true);
     }
 }
 
-void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
+void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
     if (mouseAffectsCamera)
         camera.ProcessMouseScroll(yoffset);
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height)
+void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }

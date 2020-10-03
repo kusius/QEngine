@@ -71,7 +71,7 @@ void UI::UpdateUI(bool &uiWindow, bool &hasChanges)
             bool ro = editor.IsReadOnly();
             if (ImGui::BeginMenu("File"))
             {
-                if (ImGui::MenuItem("Save", "Ctrl-S", nullptr, !ro))
+                if (ImGui::MenuItem("Save"))
                 {
                     std::string textToSave = editor.GetText();
                     UI::ShaderEditorSaveFile(currentFile.c_str(), textToSave);

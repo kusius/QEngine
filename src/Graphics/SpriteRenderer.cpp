@@ -1,4 +1,5 @@
 #include "SpriteRenderer.h"
+#include <Managers/EntityManager.h>
 
 Renderer::Renderer(Shader &shader)
 {
@@ -219,4 +220,100 @@ void Renderer::DrawEntities(const std::vector<Entity> &entities)
 	{
 		e.Draw(this->shader, this->highlightShader);
 	}
+}
+
+void Renderer::DrawGameObjects()
+{
+	glBindVertexArray(VAO);
+	GameObjects *gos = &(EntityManager::gameObjects);
+	unsigned int meshIndex = 0;
+	unsigned int textureIndex = 0;
+	unsigned int baseIndex = 0;
+	unsigned int baseVertex = 0;
+
+	for (unsigned int i = 0; i < EntityManager::objectCount; i++)
+	{
+		shader->Use();
+		shader->SetMatrix4("model", gos->modelMatrices[i]);
+		
+		// Draw each mesh of this object
+		unsigned int numMeshes = gos->numMeshes[i];
+		
+		for (unsigned int j = 0; j < numMeshes; j++)
+		{
+			unsigned int diffuseNr = 1;
+			unsigned int specularNr = 1;
+			unsigned int emissionNr = 1;
+			unsigned int normalNr = 1;
+			// Bind the appropriate textures for this mesh
+			
+			for (unsigned int k = 0; k < gos->numTextures[meshIndex]; k++)
+			{
+				glActiveTexture(GL_TEXTURE0 + k);
+				string number;
+				string name = gos->textures[textureIndex].type;
+				if (name == "texture_diffuse")
+					number = std::to_string(diffuseNr++);
+				else if (name == "texture_specular")
+					number = std::to_string(specularNr++);
+				else if (name == "texture_emission")
+					number = std::to_string(emissionNr++);
+				else if (name == "texture_normal")
+					number = std::to_string(normalNr++);
+
+				shader->Use();
+				shader->SetInteger(("material." + name + number).c_str(), k);
+				shader->SetFloat("material.shininess", 32.0f);
+				glBindTexture(GL_TEXTURE_2D, gos->textures[textureIndex].id);
+				textureIndex++;
+			}
+			glActiveTexture(GL_TEXTURE0);
+		
+			unsigned int numIndices = gos->numIndices[meshIndex];
+			
+			glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
+									(void*)(baseIndex*sizeof(unsigned int)), baseVertex);
+			
+			baseIndex += gos->numIndices[meshIndex];
+			baseVertex += gos->numVertices[meshIndex];
+			
+			meshIndex++;
+		}
+	}
+	glBindVertexArray(0);
+}
+
+void Renderer::SetupMeshes()
+{
+	unsigned int numVertices = EntityManager::gameObjects.vertices.size();
+	unsigned int numIndices = EntityManager::gameObjects.indices.size();
+
+
+	glGenVertexArrays(1, &VAO);
+    glBindVertexArray(VAO);
+
+	// bind a buffer and fill it with vertex data for ALL meshes (accross ALL gameobjects)
+	glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vertex), &EntityManager::gameObjects.vertices[0], GL_STATIC_DRAW);
+
+	// bind a buffer and fill it with index data for ALL meshes (accross ALL gameobjects)
+	glGenBuffers(1, &EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(unsigned int), &EntityManager::gameObjects.indices[0], GL_STATIC_DRAW);
+
+    //vertex positions
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
+    //vertex normals
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, Normal));
+    //texture ccordinates
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, TexCoords));
+    //tangent space
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)offsetof(Vertex, Tangent));
+
+    glBindVertexArray(0);
 }

@@ -10,12 +10,12 @@ Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture
 void Mesh::setupMesh()
 {
     glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
+    glGenBuffers(1, &VBO); // vertex buffer
+    glGenBuffers(1, &EBO); // element (index) buffer
 
     glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -66,6 +66,7 @@ void Mesh::Draw(Shader *shader, Shader *highlightsShader)
         shader->SetFloat("material.shininess", 32.0f);
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
+    glActiveTexture(GL_TEXTURE0);
 
     //draw mesh
     glBindVertexArray(VAO);
@@ -92,6 +93,4 @@ void Mesh::Draw(Shader *shader, Shader *highlightsShader)
     }
 
     glBindVertexArray(0);
-    // always good practice to set everything back to defaults once configured.
-    glActiveTexture(GL_TEXTURE0);
 }
