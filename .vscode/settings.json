@@ -1,6 +1,7 @@
 {
     "cmake.sourceDirectory": "${workspaceFolder}/src",
     "editor.formatOnSave": true,
+    "editor.formatOnType": true,
     "files.associations": {
         "vector": "cpp",
         "xstring": "cpp",
@@ -66,5 +67,6 @@
         "xutility": "cpp",
         "thread": "cpp"
     },
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "editor.renderIndentGuides": false
 }
