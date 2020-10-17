@@ -17,6 +17,8 @@ UI/TextEditor.cpp
 
 set(SOURCE_FILES
 Program.cpp
+Platform/Platform.cpp
+Debug/CountDebugRegions.cpp
 ResourceManager.cpp
 Managers/EntityManager.cpp
 Thirdparty/glad.c

@@ -65,8 +65,11 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "atomic": "cpp",
+        "compare": "cpp"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "editor.renderIndentGuides": false
+    "editor.renderIndentGuides": false,
+    "C_Cpp.dimInactiveRegions": false
 }
