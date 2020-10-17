@@ -1,3 +1,12 @@
+/**
+ * @file SpriteRenderer.h
+ * @author GMK
+ * @brief The renderer is a system that contains functions with the draw commands of
+ * the various drawables. The @see EntityManager gameObjects SOA as well as any primitive geometry.
+ * 
+ * Primitive 3D drawables are: cubes
+ * 
+ */
 #ifndef SPRITE_RENDERER_H
 #define SPRITE_RENDERER_H
 
@@ -11,9 +20,6 @@
 #include "Texture.h"
 #include "Shader.h"
 
-// TODO: Add a new function that takes the GameObjects SOA and renders it to the screen
-// remember to send as much vertex data to the cpu at once as possible.
-// (Search how do we render multiple in OpenGL, buffers, texture buffers etc...)
 class Renderer
 {
 public:
@@ -33,6 +39,12 @@ public:
 	void DrawSprite(Texture2D &texture);
 
 	void DrawEntities(const std::vector<Entity> &entities);
+
+	/**
+	 * @brief Draws the EntityManager::gameObjects SOA. 
+	 * @see EntityManager
+	 * 
+	 */
 	void DrawGameObjects();
 	void SetupMeshes();
 
