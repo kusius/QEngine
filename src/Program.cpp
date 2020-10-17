@@ -1,6 +1,6 @@
 #include <Platform/Win64Platform.h>
 #include <Camera.h>
-#include <Debug/CountDebugRegions.h>
+#include <Metrics/CountDebugRegions.h>
 #include <Graphics/SpriteRenderer.h>
 #include <Managers/EntityManager.h>
 #include <Objects/Entity.h>

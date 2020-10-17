@@ -4,7 +4,7 @@
 #include "UI/imgui.h"
 #include "UI/imgui_impl_glfw.h"
 #include "UI/imgui_impl_opengl3.h"
-#include <Debug/CountDebugRegions.h>
+#include <Metrics/CountDebugRegions.h>
 
 #include <cstdint>
 
