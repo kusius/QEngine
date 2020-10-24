@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.4)
 project(Q)
 
+
 set(GRAPHICS_SOURCE_FILES
 Graphics/Mesh.cpp
 Graphics/Model.cpp
@@ -32,7 +33,7 @@ link_directories(${PROJECT_SOURCE_DIR}/Thirdparty/libs)
 
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /nologo /Zi  /EHsc /wd4005 /DQDEBUG")
-#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /nologo /Zi  /EHsc /wd4005")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /nologo /Zi  /EHsc")
 
 add_executable(Q ${SOURCE_FILES})
 

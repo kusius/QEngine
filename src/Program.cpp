@@ -13,6 +13,13 @@
 #include <iostream>
 #include <string>
 
+enum WindowMode
+{
+  WINDOWED_FULLSCREEN,
+  WINDOWED,
+  FULLSCREEN
+};
+
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action,
                  int mode);
 void MouseCallback(GLFWwindow *window, double xpos, double ypos);
@@ -54,6 +61,34 @@ bool uiWindow = false;
 bool uiWindowFocused = true;
 bool editorHasChanges = false;
 
+GLFWwindow *SetWindowMode(WindowMode windowMode)
+{
+  const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+  GLFWwindow *window = nullptr;
+
+  switch (windowMode)
+  {
+  case WINDOWED_FULLSCREEN:
+    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+    window = glfwCreateWindow(mode->width, mode->height, "Q",
+                              glfwGetPrimaryMonitor(), nullptr);
+    break;
+  case WINDOWED:
+    glfwWindowHint(GLFW_DECORATED, true);
+    glfwWindowHint(GLFW_MAXIMIZED, true);
+    glfwWindowHint(GLFW_RESIZABLE, true);
+    window = glfwCreateWindow(mode->width, mode->height, "Q", nullptr, nullptr);
+    break;
+  default:
+    std::cout << "[ERROR] Unknown window mode: " << windowMode << std::endl;
+  }
+
+  return window;
+}
+
 GLFWwindow *QCreateWindow()
 {
   GLFWwindow *window;
@@ -70,21 +105,13 @@ GLFWwindow *QCreateWindow()
   targetFrameTime = 1.0 / targetRefreshRate;
 
   /*
-  //Windowed Fullscreen
-  glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-  glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-  glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-  glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-  window = glfwCreateWindow(mode->width, mode->height, "Q",
-  glfwGetPrimaryMonitor(), nullptr);
-  */
+//Windowed Fullscreen
+
+*/
 
   // maximized window
   //*
-  glfwWindowHint(GLFW_DECORATED, true);
-  glfwWindowHint(GLFW_MAXIMIZED, true);
-  glfwWindowHint(GLFW_RESIZABLE, true);
-  window = glfwCreateWindow(mode->width, mode->height, "Q", nullptr, nullptr);
+  window = SetWindowMode(WINDOWED_FULLSCREEN);
   //*/
 
   glfwMakeContextCurrent(window);
@@ -158,6 +185,8 @@ int main(int argc, char **argv)
   lights.pointLightPositions[3] = glm::vec3(0.0f, 0.0f, -3.0f);
 
   // Make our shaders (read, compile, link)
+  ResourceManager::LoadTexture("Assets/UI/Textures/loading_screen.jpg", false,
+                               "loading_screen");
   ResourceManager::LoadShader("Assets/Shaders/shader.vert",
                               "Assets/Shaders/lightingshader.frag", nullptr,
                               "shader");
@@ -167,17 +196,16 @@ int main(int argc, char **argv)
   ResourceManager::LoadShader("Assets/Shaders/shader.vert",
                               "Assets/Shaders/diffusecolor.frag", nullptr,
                               "highlight");
+
   Shader *shader = ResourceManager::GetShader("shader");
   Shader *lightShader = ResourceManager::GetShader("lampshader");
   Shader *highlightShader = ResourceManager::GetShader("highlight");
 
   ShaderStaticData(shader, lightShader);
 
-  // Setup renderers
   Renderer *renderer, *lightRenderer;
   renderer = new Renderer(*shader, *highlightShader);
   lightRenderer = new Renderer(*lightShader);
-  // Load models
 
   EntityManager::Init();
   EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
@@ -194,19 +222,6 @@ int main(int argc, char **argv)
   // renderer prepares data based on current gameObjects SOA
   renderer->SetupMeshes();
 
-  // Entity e = Entity("Assets/models/table/scene.gltf");
-  // e.Move(glm::vec3(0.0f, 0.0f, -1.5f));
-  // e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
-  // entities.push_back(e);
-
-  /*
-  Entity e("Assets/models/table/scene.gltf");
-  e.Move(glm::vec3(0.0f, -2.0f, 2.5f));
-  e.Scale(glm::vec3(-0.9f, -0.9f, -0.9f));
-  e.Rotate(glm::vec3(-90.0f, 0.0f, 90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-  entities.push_back(e);
-  */
-
   double thisTime = 0.0;
   double deltaTime = 0.0;
   double startFrameTime = 0.0;
@@ -215,9 +230,7 @@ int main(int argc, char **argv)
 
   UI::SetupContext(window);
   UI::ShaderEditorOpenFile("Assets/Shaders/lightingshader.frag");
-  //*****************
-  // MAIN LOOP
-  //******************
+
   InitPlatform();
   InitDebug();
 

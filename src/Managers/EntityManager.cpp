@@ -5,8 +5,15 @@ using namespace std;
 
 GameObjects EntityManager::gameObjects;
 unsigned int EntityManager::objectCount;
+map<string, unsigned int> EntityManager::gameObjectsMap;
 
 void EntityManager::Init() { objectCount = 0; }
+
+void EntityManager::ImportModelFromFile(const char *path, string name)
+{
+  gameObjectsMap[name] = objectCount;
+  EntityManager::ImportModelFromFile(path);
+}
 
 void EntityManager::ImportModelFromFile(const char *path)
 {
@@ -16,7 +23,8 @@ void EntityManager::ImportModelFromFile(const char *path)
   // mesh -> vertices[], indices[], textures[]
   GameObjects *gos = &(EntityManager::gameObjects);
   gos->numMeshes.push_back(m.meshes.size());
-  for (unsigned int i = 0; i < m.meshes.size(); i++) {
+  for (unsigned int i = 0; i < m.meshes.size(); i++)
+  {
     // Mesh data
     gos->numVertices.push_back(m.meshes[i].vertices.size());
     gos->numIndices.push_back(m.meshes[i].indices.size());
