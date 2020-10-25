@@ -17,7 +17,6 @@ enum WindowMode
 {
   WINDOWED_FULLSCREEN,
   WINDOWED,
-  FULLSCREEN
 };
 
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action,
@@ -52,10 +51,6 @@ bool key_states[512] = {false};
 
 // light position
 glm::vec3 lightPos(1.2, 1.0f, 2.0f); // in global space coordinates
-
-//************ENTITIES***********//
-// TODO(George): Consider merging these into ResourceManager
-vector<Entity> entities;
 
 bool uiWindow = false;
 bool uiWindowFocused = true;
@@ -111,7 +106,7 @@ GLFWwindow *QCreateWindow()
 
   // maximized window
   //*
-  window = SetWindowMode(WINDOWED_FULLSCREEN);
+  window = SetWindowMode(WindowMode::WINDOWED);
   //*/
 
   glfwMakeContextCurrent(window);
@@ -444,7 +439,6 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader,
 
     if (ProcessKeyTap(GLFW_KEY_SPACE, window))
     {
-      entities[0].isSelected = !entities[0].isSelected;
     }
   }
   if (ProcessKeyTap(GLFW_KEY_F1, window))

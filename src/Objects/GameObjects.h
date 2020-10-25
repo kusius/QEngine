@@ -16,17 +16,19 @@ struct Lights
 
 struct GameObjects
 {
-  std::vector<unsigned int> numMeshes;
+  std::vector<unsigned int> numMeshes; // size: number unique models
+
+  // how many textures, vertices and indices does each mesh have
   std::vector<unsigned int> numTextures;
   std::vector<unsigned int> numVertices;
   std::vector<unsigned int> numIndices;
-  /*Geometry*/
-  std::vector<glm::mat4> modelMatrices;
-  /*Mesh data (can we just send everything to the GPU at once? vertices+indices
-   * and textures)*/
+  // all gameObject data into single arrays
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
   std::vector<Texture> textures;
+
+  // modelMatricec stores numInstances matrices for that gameObject
+  std::vector<glm::mat4> modelMatrices;
   std::vector<glm::vec3> positions;
   std::vector<glm::vec3> scales;
   std::vector<glm::vec3> angles;
