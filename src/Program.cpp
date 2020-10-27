@@ -203,16 +203,27 @@ int main(int argc, char **argv)
   lightRenderer = new Renderer(*lightShader);
 
   EntityManager::Init();
-  EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
-  EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
-  EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
-  EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 2.5f),
+  GameObject table1 =
+      EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+  GameObject sofa1 =
+      EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
+  GameObject table2 =
+      EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+  GameObject table3 =
+      EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+  EntityManager::TransformModel(table1, glm::vec3(0.0f, -2.0f, 2.5f),
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
-  EntityManager::TransformModel(1, glm::vec3(0.0f, -2.0f, -1.5f));
-  EntityManager::TransformModel(2, glm::vec3(0.0f, -2.0f, 6.5f),
+  EntityManager::TransformModel(table2, glm::vec3(0.0f, -2.0f, 6.5f),
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
+  EntityManager::TransformModel(table3, glm::vec3(0.0f, -2.0f, 10.5f),
+                                glm::vec3(-90.0f, 0.0f, 90.0f),
+                                glm::vec3(0.1f));
+  EntityManager::TransformModel(sofa1, glm::vec3(0.0f, -2.0f, -1.5f));
+  // EntityManager::TransformModel(table3, glm::vec3(0.0f, -2.0f, 6.5f),
+  //                            glm::vec3(-90.0f, 0.0f, 90.0f),
+  // glm::vec3(0.1f));
 
   // renderer prepares data based on current gameObjects SOA
   renderer->SetupMeshes();

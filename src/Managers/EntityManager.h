@@ -6,14 +6,21 @@
 #include <map>
 #include <string>
 
+#define MAX_GAME_OBJECTS 512
+
 using namespace std;
+
+struct GameObject
+{
+  unsigned int id, modelIndex, instanceIndex;
+};
 
 class EntityManager
 {
 public:
   // Structure of arrays describing all gameobjects.
   static GameObjects gameObjects;
-  static InstanceMap instanceMap;
+  static std::map<string, unsigned int> loadedModels;
   // The total objects stored in the gameObjects array
   static unsigned int nextInstanceID;
 
@@ -24,7 +31,7 @@ public:
    * @brief Import a model from path, give a new ID and store in gameObjects
    * @param path The full or relative path to the model resource file.S
    */
-  static unsigned int ImportModelFromFile(const char *path);
+  static GameObject ImportModelFromFile(const char *path);
 
   /**
    * @brief Transform one of the models stored in EntityManager::gameObjects
@@ -37,8 +44,7 @@ public:
    * @param scale the amount to scale as a percentage of the original scale
    * in x, y, z
    */
-  static void TransformModel(unsigned int id,
-                             glm::vec3 position = glm::vec3(0.0),
+  static void TransformModel(GameObject go, glm::vec3 position = glm::vec3(0.0),
                              glm::vec3 rotation = glm::vec3(0.0),
                              glm::vec3 scale = glm::vec3(1.0));
   // Translate a GameObject

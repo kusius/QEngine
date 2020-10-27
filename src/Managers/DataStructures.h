@@ -5,8 +5,13 @@
 
 struct EntityKey
 {
-  string modelPath;
+  std::string modelPath;
   unsigned int instanceID;
+};
+
+struct EntityKeyCmp
+{
+  bool operator()(const EntityKey &left, const EntityKey &right) const;
 };
 
 struct IntKey
@@ -16,17 +21,9 @@ struct IntKey
 
 struct StringKey
 {
-  string modelPath;
+  std::string modelPath;
 };
 
-bool operator<(const EntityKey &ek, const StringKey &sk);
-bool operator<(const StringKey &sk, const EntityKey &ek);
-
-bool operator<(const EntityKey &ek, const IntKey &ik);
-bool operator<(const IntKey &ik, const EntityKey &ek);
-
-bool operator<(const EntityKey &left, const EntityKey &right);
-
-typedef std::map<EntityKey, unsigned int, std::less<>> InstanceMap;
+typedef std::map<EntityKey, unsigned int, EntityKeyCmp> InstanceMap;
 
 #endif

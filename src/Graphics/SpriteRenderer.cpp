@@ -227,10 +227,10 @@ void Renderer::DrawGameObjects()
   unsigned int baseIndex = 0;
   unsigned int baseVertex = 0;
 
+  // TODO: Draw instances with glDraw*Instanced
   for (unsigned int i = 0; i < EntityManager::gameObjects.numMeshes.size(); i++)
   {
     shader->Use();
-    shader->SetMatrix4("model", gos->modelMatrices[i]);
 
     // Draw each mesh of this object
     unsigned int numMeshes = gos->numMeshes[i];
@@ -267,9 +267,14 @@ void Renderer::DrawGameObjects()
 
       unsigned int numIndices = gos->numIndices[meshIndex];
 
-      glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
-                               (void *)(baseIndex * sizeof(unsigned int)),
-                               baseVertex);
+      for (unsigned int instance = 0; instance < gos->modelMatrices[i].size();
+           instance++)
+      {
+        shader->SetMatrix4("model", gos->modelMatrices[i][instance]);
+        glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
+                                 (void *)(baseIndex * sizeof(unsigned int)),
+                                 baseVertex);
+      }
 
       baseIndex += gos->numIndices[meshIndex];
       baseVertex += gos->numVertices[meshIndex];

@@ -5,43 +5,31 @@ using namespace std;
 
 GameObjects EntityManager::gameObjects;
 unsigned int EntityManager::nextInstanceID;
-InstanceMap EntityManager::instanceMap;
+std::map<string, unsigned int> EntityManager::loadedModels;
 
 void EntityManager::Init()
 {
   nextInstanceID = 0;
-  instanceMap.clear();
+  loadedModels.clear();
 }
 
-unsigned int EntityManager::ImportModelFromFile(const char *path)
+GameObject EntityManager::ImportModelFromFile(const char *path)
 {
   GameObjects *gos = &(EntityManager::gameObjects);
   unsigned int thisInstanceID = nextInstanceID;
-  // If we get asked to load the same model (same path) we just
-  // duplicate the data
-  // NOTE: right now we are just saving the id of the first occurence of the
-  // modelt without tracking which models inside gameObjects are the same.
-  // In the future we would want to draw identical objects with the likes of
-  // glDraw*Instanced
-  StringKey sk = {string(path)};
-  auto it = instanceMap.find(sk);
-  if (it != instanceMap.end())
+  GameObject thisGameObject = {};
+
+  auto it = loadedModels.find(std::string(path));
+  if (it != loadedModels.end())
   {
-    // for now, inserting a duplicate model, means tracking
-    // different modelMatrix, positions, scales and angles
-    // for the same vertices, indices and textures data
-    cout << "Existing model: " << it->first.modelPath
-         << " with instance ID: " << it->first.instanceID << endl;
-    cout << "Inserting new instance of model: " << string(path)
-         << " with instanceID" << thisInstanceID << endl;
+    thisGameObject.id = thisInstanceID;
+    thisGameObject.modelIndex = it->second;
+    thisGameObject.instanceIndex = gos->modelMatrices[it->second].size();
 
-    EntityKey k = {string(path), thisInstanceID};
-    instanceMap[k] = gos->modelMatrices.size();
-
-    gos->modelMatrices.push_back(glm::mat4(1.0f));
-    gos->positions.push_back(glm::vec3(0.0f));
-    gos->angles.push_back(glm::vec3(0.0f));
-    gos->scales.push_back(glm::vec3(1.0f));
+    gos->modelMatrices[it->second].push_back(glm::mat4(1.0f));
+    gos->positions[it->second].push_back(glm::vec3(0.0f));
+    gos->angles[it->second].push_back(glm::vec3(0.0f));
+    gos->scales[it->second].push_back(glm::vec3(1.0f));
   }
   else
   {
@@ -49,6 +37,11 @@ unsigned int EntityManager::ImportModelFromFile(const char *path)
     // as datastructures
     // model -> meshes[]
     // mesh -> vertices[], indices[], textures[]
+    // model index into gameObjects SOA
+    thisGameObject.id = thisInstanceID;
+    thisGameObject.instanceIndex = 0;
+    thisGameObject.modelIndex = gos->numMeshes.size();
+    loadedModels[std::string(path)] = gos->numMeshes.size();
     gos->numMeshes.push_back(m.meshes.size());
     for (unsigned int i = 0; i < m.meshes.size(); i++)
     {
@@ -67,33 +60,28 @@ unsigned int EntityManager::ImportModelFromFile(const char *path)
                            m.meshes[i].textures.end());
     }
 
-    // instance tracking
-    EntityKey k = {string(path), thisInstanceID};
-    instanceMap[k] = gos->modelMatrices.size();
-
     // World placement data
-    gos->modelMatrices.push_back(glm::mat4(1.0f));
-    gos->positions.push_back(glm::vec3(0.0f));
-    gos->angles.push_back(glm::vec3(0.0f));
-    gos->scales.push_back(glm::vec3(1.0f));
+    gos->modelMatrices.push_back({glm::mat4(1.0f)});
+    gos->positions.push_back({glm::vec3(0.0f)});
+    gos->angles.push_back({glm::vec3(0.0f)});
+    gos->scales.push_back({glm::vec3(1.0f)});
   }
 
   nextInstanceID++;
-  return thisInstanceID;
+  return thisGameObject;
 }
 
-void EntityManager::TransformModel(unsigned int id, glm::vec3 move,
+void EntityManager::TransformModel(GameObject go, glm::vec3 move,
                                    glm::vec3 rotation, glm::vec3 scale)
 {
-  IntKey ik = {id};
-  auto instance = instanceMap.find(ik);
-  if (instance != instanceMap.end())
-  {
-    unsigned int index = instance->second;
 
-    EntityManager::gameObjects.positions[index] += move;
-    EntityManager::gameObjects.angles[index] = rotation;
-    EntityManager::gameObjects.scales[index] = scale;
+  if (go.id < MAX_GAME_OBJECTS && go.id < nextInstanceID)
+  {
+    EntityManager::gameObjects.positions[go.modelIndex][go.instanceIndex] +=
+        move;
+    EntityManager::gameObjects.angles[go.modelIndex][go.instanceIndex] =
+        rotation;
+    EntityManager::gameObjects.scales[go.modelIndex][go.instanceIndex] = scale;
     glm::mat4 transform = glm::mat4(1.0);
     transform = glm::translate(transform, move);
     transform = glm::rotate(transform, glm::radians(rotation.x),
@@ -103,24 +91,16 @@ void EntityManager::TransformModel(unsigned int id, glm::vec3 move,
     transform = glm::rotate(transform, glm::radians(rotation.z),
                             glm::vec3(0.0f, 0.0f, 1.0f));
     transform = glm::scale(transform, scale);
-    EntityManager::gameObjects.modelMatrices[index] = transform;
+    EntityManager::gameObjects.modelMatrices[go.modelIndex][go.instanceIndex] =
+        transform;
   }
 }
 
-bool operator<(const EntityKey &ek, const StringKey &sk)
+bool EntityKeyCmp::operator()(const EntityKey &left,
+                              const EntityKey &right) const
 {
-  return strcmp(sk.modelPath.c_str(), ek.modelPath.c_str());
-}
-bool operator<(const StringKey &sk, const EntityKey &ek) { return ek < sk; }
-
-bool operator<(const EntityKey &ek, const IntKey &ik)
-{
-  return ek.instanceID < ik.instanceID;
-}
-bool operator<(const IntKey &ik, const EntityKey &ek) { return ek < ik; }
-
-bool operator<(const EntityKey &left, const EntityKey &right)
-{
-  return left.instanceID < right.instanceID &&
-         strcmp(left.modelPath.c_str(), right.modelPath.c_str());
+  if (left.instanceID == right.instanceID)
+    return strcmp(left.modelPath.c_str(), right.modelPath.c_str()) < 0;
+  else
+    return left.instanceID < right.instanceID;
 }

@@ -2,7 +2,6 @@
 #define GAME_OBJECTS_H
 
 #define MAX_POINT_LIGHTS 4
-#define MAX_GAME_OBJECTS 512
 
 #include "Thirdparty/glm/glm.hpp"
 #include "Graphics/Mesh.h"
@@ -16,6 +15,7 @@ struct Lights
 
 struct GameObjects
 {
+  std::vector<unsigned int> numInstances;
   std::vector<unsigned int> numMeshes; // size: number unique models
 
   // how many textures, vertices and indices does each mesh have
@@ -28,10 +28,10 @@ struct GameObjects
   std::vector<Texture> textures;
 
   // modelMatricec stores numInstances matrices for that gameObject
-  std::vector<glm::mat4> modelMatrices;
-  std::vector<glm::vec3> positions;
-  std::vector<glm::vec3> scales;
-  std::vector<glm::vec3> angles;
+  std::vector<std::vector<glm::mat4>> modelMatrices;
+  std::vector<std::vector<glm::vec3>> positions;
+  std::vector<std::vector<glm::vec3>> scales;
+  std::vector<std::vector<glm::vec3>> angles;
 };
 
 #endif // GAME_OBJECTS_H
