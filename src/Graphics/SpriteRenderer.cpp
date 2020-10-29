@@ -230,8 +230,6 @@ void Renderer::DrawGameObjects()
   // TODO: Draw instances with glDraw*Instanced
   for (unsigned int i = 0; i < EntityManager::gameObjects.numMeshes.size(); i++)
   {
-    shader->Use();
-
     // Draw each mesh of this object
     unsigned int numMeshes = gos->numMeshes[i];
 
@@ -270,10 +268,35 @@ void Renderer::DrawGameObjects()
       for (unsigned int instance = 0; instance < gos->modelMatrices[i].size();
            instance++)
       {
+        shader->Use();
         shader->SetMatrix4("model", gos->modelMatrices[i][instance]);
-        glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
-                                 (void *)(baseIndex * sizeof(unsigned int)),
-                                 baseVertex);
+        if ((gos->flags[i][instance] & FLAG_SELECTED) && highlightShader)
+        {
+          // TODO: Draw outline
+          glStencilFunc(GL_ALWAYS, 1, 0xFF);
+          glStencilMask(0xFF);
+          glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
+                                   (void *)(baseIndex * sizeof(uint32_t)),
+                                   baseVertex);
+
+          glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+          glStencilMask(0xFF);
+          glDisable(GL_DEPTH_TEST);
+          highlightShader->Use();
+          highlightShader->SetMatrix4(
+              "model", glm::scale(gos->modelMatrices[i][instance],
+                                  glm::vec3(1.01, 1.01, 1.01)));
+          glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
+                                   (void *)(baseIndex * sizeof(uint32_t)),
+                                   baseVertex);
+          glStencilMask(0xFF);
+          glStencilFunc(GL_ALWAYS, 1, 0xFF);
+          glEnable(GL_DEPTH_TEST);
+        }
+        else
+          glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
+                                   (void *)(baseIndex * sizeof(uint32_t)),
+                                   baseVertex);
       }
 
       baseIndex += gos->numIndices[meshIndex];
@@ -304,7 +327,7 @@ void Renderer::SetupMeshes()
   // gameobjects)
   glGenBuffers(1, &EBO);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(unsigned int),
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(uint32_t),
                &EntityManager::gameObjects.indices[0], GL_STATIC_DRAW);
 
   // vertex positions

@@ -41,7 +41,7 @@ void ResourceManager::Clear()
 		glDeleteTextures(1, &it.second.ID);
 }
 
-void ResourceManager::RecompileShaders()
+void ResourceManager::recompileShaders()
 {
 	for (auto it : Shaders)
 		ResourceManager::LoadShader(it.second.vShaderFile.c_str(), it.second.fShaderFile.c_str(), nullptr, it.first);

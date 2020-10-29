@@ -22,7 +22,7 @@ public:
 	static std::map<std::string, Shader> Shaders;
 	static std::map<std::string, Texture2D> Textures;
 	//Recompile ALL shaders. TODO: Most likely a bad idea, done for testing now.
-	static void RecompileShaders();
+	static void recompileShaders();
 	//Load and generate a shader program given the source files
 	static Shader LoadShader(const GLchar *vShaderFile, const GLchar *fShaderFile, const GLchar *gShaderFile, std::string name);
 	//Retrieve stored shader

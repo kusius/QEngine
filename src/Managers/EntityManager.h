@@ -2,24 +2,16 @@
 #define ENTITY_MANAGER_H
 
 #include <Objects/GameObjects.h>
-#include "DataStructures.h"
 #include <map>
 #include <string>
-
-#define MAX_GAME_OBJECTS 512
-
-using namespace std;
-
-struct GameObject
-{
-  unsigned int id, modelIndex, instanceIndex;
-};
 
 class EntityManager
 {
 public:
   // Structure of arrays describing all gameobjects.
   static GameObjects gameObjects;
+  // string: the path of the loaded model
+  // unsigned int: the model index into the gameObjects SOA
   static std::map<string, unsigned int> loadedModels;
   // The total objects stored in the gameObjects array
   static unsigned int nextInstanceID;
@@ -31,7 +23,8 @@ public:
    * @brief Import a model from path, give a new ID and store in gameObjects
    * @param path The full or relative path to the model resource file.S
    */
-  static GameObject ImportModelFromFile(const char *path);
+  static GameObject ImportModelFromFile(const char *path,
+                                        const char *name = "unnamed");
 
   /**
    * @brief Transform one of the models stored in EntityManager::gameObjects
@@ -53,6 +46,8 @@ public:
   static void Rotate(unsigned int id, glm::vec3 rotation);
   // Scale a GameObject
   static void Scale(unsigned int id, glm::vec3 scale);
+  // Set a gameobject's flags
+  static void SetFlags(GameObject go, uint16_t flags);
 
 private:
   EntityManager(){};

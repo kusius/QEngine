@@ -13,11 +13,14 @@ void EntityManager::Init()
   loadedModels.clear();
 }
 
-GameObject EntityManager::ImportModelFromFile(const char *path)
+GameObject EntityManager::ImportModelFromFile(const char *path,
+                                              const char *name)
 {
   GameObjects *gos = &(EntityManager::gameObjects);
   unsigned int thisInstanceID = nextInstanceID;
   GameObject thisGameObject = {};
+  thisGameObject.name = std::string(name);
+  thisGameObject.path = std::string(path);
 
   auto it = loadedModels.find(std::string(path));
   if (it != loadedModels.end())
@@ -30,6 +33,7 @@ GameObject EntityManager::ImportModelFromFile(const char *path)
     gos->positions[it->second].push_back(glm::vec3(0.0f));
     gos->angles[it->second].push_back(glm::vec3(0.0f));
     gos->scales[it->second].push_back(glm::vec3(1.0f));
+    gos->flags[it->second].push_back(0x0000);
   }
   else
   {
@@ -65,6 +69,8 @@ GameObject EntityManager::ImportModelFromFile(const char *path)
     gos->positions.push_back({glm::vec3(0.0f)});
     gos->angles.push_back({glm::vec3(0.0f)});
     gos->scales.push_back({glm::vec3(1.0f)});
+    // State data
+    gos->flags.push_back({0x0000});
   }
 
   nextInstanceID++;
@@ -74,7 +80,6 @@ GameObject EntityManager::ImportModelFromFile(const char *path)
 void EntityManager::TransformModel(GameObject go, glm::vec3 move,
                                    glm::vec3 rotation, glm::vec3 scale)
 {
-
   if (go.id < MAX_GAME_OBJECTS && go.id < nextInstanceID)
   {
     EntityManager::gameObjects.positions[go.modelIndex][go.instanceIndex] +=
@@ -96,11 +101,7 @@ void EntityManager::TransformModel(GameObject go, glm::vec3 move,
   }
 }
 
-bool EntityKeyCmp::operator()(const EntityKey &left,
-                              const EntityKey &right) const
+void EntityManager::SetFlags(GameObject go, uint16_t flags)
 {
-  if (left.instanceID == right.instanceID)
-    return strcmp(left.modelPath.c_str(), right.modelPath.c_str()) < 0;
-  else
-    return left.instanceID < right.instanceID;
+  EntityManager::gameObjects.flags[go.modelIndex][go.instanceIndex] |= flags;
 }

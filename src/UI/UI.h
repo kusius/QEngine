@@ -8,7 +8,7 @@
 
 #include <cstdint>
 
-namespace UI
+namespace EditorUI
 {
 
 struct UIInfo
@@ -23,6 +23,6 @@ void ShaderEditorSaveFile(const char *file, std::string &textToSave);
 void NewFrame();
 void Render();
 void Shutdown();
-} // namespace UI
+} // namespace EditorUI
 
 #endif
