@@ -67,7 +67,8 @@
         "xutility": "cpp",
         "thread": "cpp",
         "atomic": "cpp",
-        "compare": "cpp"
+        "compare": "cpp",
+        "*.rh": "cpp"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "editor.renderIndentGuides": false,

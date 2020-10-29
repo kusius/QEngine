@@ -17,7 +17,6 @@ enum WindowMode
 {
   WINDOWED_FULLSCREEN,
   WINDOWED,
-  FULLSCREEN
 };
 
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action,
@@ -52,10 +51,6 @@ bool key_states[512] = {false};
 
 // light position
 glm::vec3 lightPos(1.2, 1.0f, 2.0f); // in global space coordinates
-
-//************ENTITIES***********//
-// TODO(George): Consider merging these into ResourceManager
-vector<Entity> entities;
 
 bool uiWindow = false;
 bool uiWindowFocused = true;
@@ -111,7 +106,7 @@ GLFWwindow *QCreateWindow()
 
   // maximized window
   //*
-  window = SetWindowMode(WINDOWED_FULLSCREEN);
+  window = SetWindowMode(WindowMode::WINDOWED);
   //*/
 
   glfwMakeContextCurrent(window);
@@ -208,16 +203,28 @@ int main(int argc, char **argv)
   lightRenderer = new Renderer(*lightShader);
 
   EntityManager::Init();
-  EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
-  EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
-  EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
-  EntityManager::TransformModel(0, glm::vec3(0.0f, -2.0f, 2.5f),
+  GameObject table1 =
+      EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+  GameObject sofa1 =
+      EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
+  GameObject table2 =
+      EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+  GameObject table3 =
+      EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+  EntityManager::TransformModel(table1, glm::vec3(0.0f, -2.0f, 2.5f),
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
-  EntityManager::TransformModel(1, glm::vec3(0.0f, -2.0f, -1.5f));
-  EntityManager::TransformModel(2, glm::vec3(0.0f, -2.0f, 6.5f),
+  EntityManager::SetFlags(table1, FLAG_SELECTED);
+  EntityManager::TransformModel(table2, glm::vec3(0.0f, -2.0f, 6.5f),
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
+  EntityManager::TransformModel(table3, glm::vec3(0.0f, -2.0f, 10.5f),
+                                glm::vec3(-90.0f, 0.0f, 90.0f),
+                                glm::vec3(0.1f));
+  EntityManager::TransformModel(sofa1, glm::vec3(0.0f, -2.0f, -1.5f));
+  // EntityManager::TransformModel(table3, glm::vec3(0.0f, -2.0f, 6.5f),
+  //                            glm::vec3(-90.0f, 0.0f, 90.0f),
+  // glm::vec3(0.1f));
 
   // renderer prepares data based on current gameObjects SOA
   renderer->SetupMeshes();
@@ -228,8 +235,8 @@ int main(int argc, char **argv)
   double endFrameTime = 0.0;
   float rotateSpeed = 10.0f;
 
-  UI::SetupContext(window);
-  UI::ShaderEditorOpenFile("Assets/Shaders/lightingshader.frag");
+  EditorUI::SetupContext(window);
+  EditorUI::ShaderEditorOpenFile("Assets/Shaders/lightingshader.frag");
 
   InitPlatform();
   InitDebug();
@@ -260,11 +267,11 @@ int main(int argc, char **argv)
     END_DEBUG_REGION(UpdateWorldObjects);
 
     BEGIN_DEBUG_REGION(UpdateDebugUI);
-    UI::NewFrame();
-    UI::Update(uiWindow, editorHasChanges);
+    EditorUI::NewFrame();
+    EditorUI::Update(uiWindow, editorHasChanges);
     if (editorHasChanges)
     {
-      ResourceManager::RecompileShaders();
+      ResourceManager::recompileShaders();
       ShaderStaticData(shader, lightShader);
       editorHasChanges = false;
     }
@@ -297,7 +304,7 @@ int main(int argc, char **argv)
     lightRenderer->DrawPointLights(lights.pointLightPositions,
                                    lights.nPointLights, glm::vec3(0.2f));
 
-    UI::Render();
+    EditorUI::Render();
 
     // TODO(George): Fixed framerate:
     // we let glfw sync with monitor refresh rate.
@@ -316,7 +323,7 @@ int main(int argc, char **argv)
     END_DEBUG_REGION(MainLoop);
   }
 
-  UI::Shutdown();
+  EditorUI::Shutdown();
   ResourceManager::Clear();
   glfwDestroyWindow(window);
   glfwTerminate();
@@ -429,7 +436,7 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader,
       camera.ProcessKeyboard(DOWN, deltaTime);
     if (ProcessKeyTap(GLFW_KEY_R, window))
     {
-      ResourceManager::RecompileShaders();
+      ResourceManager::recompileShaders();
       ShaderStaticData(shader, lightShader);
     }
     if (ProcessKeyTap(GLFW_KEY_P, window))
@@ -444,7 +451,6 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader,
 
     if (ProcessKeyTap(GLFW_KEY_SPACE, window))
     {
-      entities[0].isSelected = !entities[0].isSelected;
     }
   }
   if (ProcessKeyTap(GLFW_KEY_F1, window))
