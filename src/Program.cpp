@@ -99,16 +99,7 @@ GLFWwindow *QCreateWindow()
   targetRefreshRate = 2 * mode->refreshRate;
   targetFrameTime = 1.0 / targetRefreshRate;
 
-  /*
-//Windowed Fullscreen
-
-*/
-
-  // maximized window
-  //*
   window = SetWindowMode(WindowMode::WINDOWED);
-  //*/
-
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
 
