@@ -48,6 +48,10 @@ public:
   static void Scale(unsigned int id, glm::vec3 scale);
   // Set a gameobject's flags
   static void SetFlags(GameObject go, uint16_t flags);
+  // Unset a gameobject's flags
+  static void UnsetFlags(GameObject go, uint16_t flags);
+  // Get a gameobject's flags
+  static uint16_t GetFlags(GameObject go, uint16_t flags);
 
 private:
   EntityManager(){};

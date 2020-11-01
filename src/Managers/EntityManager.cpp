@@ -105,3 +105,14 @@ void EntityManager::SetFlags(GameObject go, uint16_t flags)
 {
   EntityManager::gameObjects.flags[go.modelIndex][go.instanceIndex] |= flags;
 }
+
+void EntityManager::UnsetFlags(GameObject go, uint16_t flags)
+{
+  EntityManager::gameObjects.flags[go.modelIndex][go.instanceIndex] &= ~flags;
+}
+
+uint16_t EntityManager::GetFlags(GameObject go, uint16_t flags)
+{
+  return EntityManager::gameObjects.flags[go.modelIndex][go.instanceIndex] &
+         flags;
+}

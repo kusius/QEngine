@@ -22,6 +22,7 @@ enum WindowMode
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action,
                  int mode);
 void MouseCallback(GLFWwindow *window, double xpos, double ypos);
+void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods);
 void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
 void ProcessInput(GLFWwindow *window, float deltaTime, Shader *hader,
@@ -99,15 +100,7 @@ GLFWwindow *QCreateWindow()
   targetRefreshRate = 2 * mode->refreshRate;
   targetFrameTime = 1.0 / targetRefreshRate;
 
-  /*
-//Windowed Fullscreen
-
-*/
-
-  // maximized window
-  //*
   window = SetWindowMode(WindowMode::WINDOWED);
-  //*/
 
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
@@ -123,6 +116,7 @@ GLFWwindow *QCreateWindow()
   glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
   glfwSetCursorPosCallback(window, MouseCallback);
   glfwSetScrollCallback(window, ScrollCallback);
+  glfwSetMouseButtonCallback(window, MouseButtonCallBack);
 
   return window;
 }
@@ -203,18 +197,17 @@ int main(int argc, char **argv)
   lightRenderer = new Renderer(*lightShader);
 
   EntityManager::Init();
-  GameObject table1 =
-      EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
-  GameObject sofa1 =
-      EntityManager::ImportModelFromFile("Assets/models/old_sofa/scene.gltf");
-  GameObject table2 =
-      EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
-  GameObject table3 =
-      EntityManager::ImportModelFromFile("Assets/models/table/scene.gltf");
+  GameObject table1 = EntityManager::ImportModelFromFile(
+      "Assets/models/table/scene.gltf", "Table");
+  GameObject sofa1 = EntityManager::ImportModelFromFile(
+      "Assets/models/old_sofa/scene.gltf", "Sofa");
+  GameObject table2 = EntityManager::ImportModelFromFile(
+      "Assets/models/table/scene.gltf", "Table");
+  GameObject table3 = EntityManager::ImportModelFromFile(
+      "Assets/models/table/scene.gltf", "Table");
   EntityManager::TransformModel(table1, glm::vec3(0.0f, -2.0f, 2.5f),
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
-  EntityManager::SetFlags(table1, FLAG_SELECTED);
   EntityManager::TransformModel(table2, glm::vec3(0.0f, -2.0f, 6.5f),
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
@@ -222,7 +215,15 @@ int main(int argc, char **argv)
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
   EntityManager::TransformModel(sofa1, glm::vec3(0.0f, -2.0f, -1.5f));
-  // EntityManager::TransformModel(table3, glm::vec3(0.0f, -2.0f, 6.5f),
+  std::vector<GameObject> gameObjects;
+  gameObjects.push_back(table1);
+  gameObjects.push_back(table2);
+  gameObjects.push_back(table3);
+  gameObjects.push_back(sofa1);
+  EditorUI::GameData gameDataForEditor = {&gameObjects, 0};
+
+  // EntityManager::TransformModel(table3,
+  // glm::vec3(0.0f, -2.0f, 6.5f),
   //                            glm::vec3(-90.0f, 0.0f, 90.0f),
   // glm::vec3(0.1f));
 
@@ -268,7 +269,7 @@ int main(int argc, char **argv)
 
     BEGIN_DEBUG_REGION(UpdateDebugUI);
     EditorUI::NewFrame();
-    EditorUI::Update(uiWindow, editorHasChanges);
+    EditorUI::Update(uiWindow, editorHasChanges, gameDataForEditor);
     if (editorHasChanges)
     {
       ResourceManager::recompileShaders();
@@ -372,6 +373,10 @@ void ShaderStaticData(Shader *shader, Shader *lightShader)
   shader->SetVector3f("spotLight.specular", glm::vec3(1.0f)); // full white
   shader->SetFloat("spotLight.cutoff", glm::cos(glm::radians(12.5f)));
   shader->SetFloat("spotLight.outercutoff", glm::cos(glm::radians(17.5f)));
+}
+
+void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods)
+{
 }
 
 // NOTE(George): Callback way is not used right now, we process input at the
