@@ -3,8 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2017, assimp team
-
+Copyright (c) 2006-2020, assimp team
 
 All rights reserved.
 
@@ -48,7 +47,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_VERSION_H_INC
 #define AI_VERSION_H_INC
 
-#include "defs.h"
+#include <assimp/defs.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -62,6 +61,13 @@ extern "C" {
 ASSIMP_API const char*  aiGetLegalString  (void);
 
 // ---------------------------------------------------------------------------
+/** @brief Returns the current patch version number of Assimp.
+ *  @return Patch version of the Assimp runtime the application was
+ *    linked/built against
+ */
+ASSIMP_API unsigned int aiGetVersionPatch(void);
+
+// ---------------------------------------------------------------------------
 /** @brief Returns the current minor version number of Assimp.
  *  @return Minor version of the Assimp runtime the application was
  *    linked/built against
@@ -73,7 +79,7 @@ ASSIMP_API unsigned int aiGetVersionMinor (void);
  *  @return Major version of the Assimp runtime the application was
  *    linked/built against
  */
-ASSIMP_API unsigned int aiGetVersionMajor (void);
+ASSIMP_API unsigned int   aiGetVersionMajor (void);
 
 // ---------------------------------------------------------------------------
 /** @brief Returns the repository revision of the Assimp runtime.
@@ -81,6 +87,12 @@ ASSIMP_API unsigned int aiGetVersionMajor (void);
  *          application was linked/built against.
  */
 ASSIMP_API unsigned int aiGetVersionRevision (void);
+
+// ---------------------------------------------------------------------------
+/** @brief Returns the branch-name of the Assimp runtime.
+ *  @return The current branch name.
+ */
+ASSIMP_API const char *aiGetBranchName();
 
 //! Assimp was compiled as a shared object (Windows: DLL)
 #define ASSIMP_CFLAGS_SHARED  0x1
@@ -93,12 +105,14 @@ ASSIMP_API unsigned int aiGetVersionRevision (void);
 #define ASSIMP_CFLAGS_NOBOOST           0x8
 //! Assimp was compiled with ASSIMP_BUILD_SINGLETHREADED defined
 #define ASSIMP_CFLAGS_SINGLETHREADED    0x10
+//! Assimp was compiled with ASSIMP_BUILD_SINGLETHREADED defined
+#define ASSIMP_CFLAGS_DOUBLE_SUPPORT 0x20
 
 // ---------------------------------------------------------------------------
 /** @brief Returns assimp's compile flags
  *  @return Any bitwise combination of the ASSIMP_CFLAGS_xxx constants.
  */
-ASSIMP_API unsigned int aiGetCompileFlags (void);
+ASSIMP_API unsigned int aiGetCompileFlags(void);
 
 #ifdef __cplusplus
 } // end extern "C"
