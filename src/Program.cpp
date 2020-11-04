@@ -137,7 +137,8 @@ void SetupOpenGL()
 void PrintLibVersions()
 {
   std::cout << "Assimp: " << aiGetVersionMajor() << "." << aiGetVersionMinor()
-            << std::endl;
+            << "." << aiGetVersionPatch() <<
+      std::endl;
   std::cout << "OpenGL: " << glGetString(GL_VERSION) << std::endl;
   std::cout << "GLSL: " << glGetString(GL_SHADING_LANGUAGE_VERSION)
             << std::endl;
