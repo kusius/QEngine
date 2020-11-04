@@ -16,6 +16,7 @@ struct GameObject
   std::string name;
   std::string path;
   unsigned int id, modelIndex, instanceIndex;
+  bool rayCastSelected;
 };
 
 struct Lights

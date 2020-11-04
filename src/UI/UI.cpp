@@ -194,6 +194,12 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
                   gameData.gameObjects->at(previousSelection), FLAG_SELECTED);
             EntityManager::SetFlags(gameData.gameObjects->at(i), FLAG_SELECTED);
           }
+          else if (previousSelection == i && previousSelection >= 0)
+          {
+            selectedGameObjectIndex = -1;
+            EntityManager::UnsetFlags(
+                gameData.gameObjects->at(previousSelection), FLAG_SELECTED);
+          }
         }
       }
     }

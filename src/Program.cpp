@@ -1,14 +1,15 @@
 #include <Platform/Win64Platform.h>
-#include <Camera.h>
 #include <Metrics/CountDebugRegions.h>
 #include <Graphics/SpriteRenderer.h>
 #include <Managers/EntityManager.h>
+#include <Camera.h>
 #include <Objects/Entity.h>
 #include <ResourceManager.h>
 #include <Thirdparty/assimp/version.h>
 #include <Thirdparty/glad/glad.h>
 #include <Thirdparty/glfw/glfw3.h>
 #include <UI/UI.h>
+#include <limits>
 
 #include <iostream>
 #include <string>
@@ -30,14 +31,16 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *hader,
 void ShaderStaticData(Shader *shader, Shader *lightShader);
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+std::vector<GameObject> gameObjects;
+glm::mat4 projection = glm::mat4(1);
 
 Lights lights = {};
 
 // Video properties
 static int targetRefreshRate;
 static double targetFrameTime;
-static unsigned int screenWidth = 800;
-static unsigned int screenHeight = 600;
+static int screenWidth = 800;
+static int screenHeight = 600;
 
 // mouse controls
 bool firstMouse = true;
@@ -143,6 +146,43 @@ void PrintLibVersions()
   std::cout << "GLFW: " << major << "." << minor << "rev" << rev << std::endl;
 }
 
+int SelectClosestObject(double mousex, double mousey, int width, int height,
+                        std::vector<GameObject> *gameObjects)
+{
+  glm::vec3 rayWorld = camera.mouseposToRayWorld(mousex, mousey, width, height);
+  float minDistance = std::numeric_limits<float>::max();
+  float distance;
+  int closest = -1;
+
+  for (int i = 0; i < gameObjects->size(); i++)
+  {
+    int modelIndex = gameObjects->at(i).modelIndex;
+    int instanceIndex = gameObjects->at(i).instanceIndex;
+
+    glm::vec3 center =
+        EntityManager::gameObjects.positions[modelIndex][instanceIndex];
+
+    if (camera.rayCheck(center, rayWorld, &distance))
+    {
+      if (distance < minDistance)
+      {
+        minDistance = distance;
+        closest = i;
+      }
+    }
+    // No intersection, unmark object if it was marked previously
+    else if (gameObjects->at(i).rayCastSelected)
+      gameObjects->at(i).rayCastSelected = false;
+
+    // If we found any, mark it
+    if (closest >= 0)
+      gameObjects->at(i).rayCastSelected = true;
+    std::cout << "Raycast closest object: " << closest << std::endl;
+
+    return closest;
+  }
+}
+
 int main(int argc, char **argv)
 {
   GLFWwindow *window = QCreateWindow();
@@ -159,7 +199,6 @@ int main(int argc, char **argv)
   //******************
   glm::mat4 view = glm::mat4(1);
   view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-  glm::mat4 projection = glm::mat4(1);
   projection =
       glm::perspective(glm::radians(camera.Zoom),
                        (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
@@ -215,7 +254,7 @@ int main(int argc, char **argv)
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
   EntityManager::TransformModel(sofa1, glm::vec3(0.0f, -2.0f, -1.5f));
-  std::vector<GameObject> gameObjects;
+
   gameObjects.push_back(table1);
   gameObjects.push_back(table2);
   gameObjects.push_back(table3);
@@ -255,6 +294,7 @@ int main(int argc, char **argv)
     projection = glm::perspective(glm::radians(camera.Zoom),
                                   (float)screenWidth / (float)screenHeight,
                                   0.1f, 100.0f);
+    camera.SetProjectionMatrix(projection);
     view = camera.GetViewMatrix();
 
     lights.pointLightPositions[1].y =
@@ -377,6 +417,12 @@ void ShaderStaticData(Shader *shader, Shader *lightShader)
 
 void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods)
 {
+  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+  {
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    SelectClosestObject(xpos, ypos, screenWidth, screenHeight, &gameObjects);
+  }
 }
 
 // NOTE(George): Callback way is not used right now, we process input at the
@@ -507,4 +553,11 @@ void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
   glViewport(0, 0, width, height);
+  screenHeight = height;
+  screenWidth = width;
+  projection = glm::mat4(1);
+  projection =
+      glm::perspective(glm::radians(camera.Zoom),
+                       (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
+  camera.SetProjectionMatrix(projection);
 }

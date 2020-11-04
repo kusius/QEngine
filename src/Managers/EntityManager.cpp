@@ -19,6 +19,7 @@ GameObject EntityManager::ImportModelFromFile(const char *path,
   GameObjects *gos = &(EntityManager::gameObjects);
   unsigned int thisInstanceID = nextInstanceID;
   GameObject thisGameObject = {};
+  thisGameObject.rayCastSelected = false;
   thisGameObject.name = std::string(name);
   thisGameObject.path = std::string(path);
 
