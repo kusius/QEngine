@@ -14,8 +14,8 @@ At this point, leveraging the following third-party software:
 # Screenshots
 Shader editor powered by ImGuiColorTextEdit
 ![Alt text](/screenshots/screenshot_1.png?raw=true "Shader editor powered by ImGuiColorTextEdit")
-Mesh outline and modified shader to ignore camera's spotlight
-![Alt text](/screenshots/screenshot_2.png?raw=true "Another frame")
+Some of the other editor widgets
+![Alt text](/screenshots/screenshot_3.png?raw=true "Another frame")
 
 # Todo
 
