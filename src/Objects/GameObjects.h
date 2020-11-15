@@ -5,17 +5,20 @@
 
 #include "Thirdparty/glm/glm.hpp"
 #include "Graphics/Mesh.h"
+#include <Thirdparty/assimp/aabb.h>
 #include <vector>
 
 #define MAX_GAME_OBJECTS 512
 
 #define FLAG_SELECTED (0x0001)
 
+// Exposes data to the game
 struct GameObject
 {
   std::string name;
   std::string path;
   unsigned int id, modelIndex, instanceIndex;
+  bool rayCastSelected;
 };
 
 struct Lights
@@ -24,6 +27,7 @@ struct Lights
   glm::vec3 pointLightPositions[MAX_POINT_LIGHTS];
 };
 
+// Used by renderer
 struct GameObjects
 {
   std::vector<uint32_t> numInstances;

@@ -16,12 +16,14 @@ public:
   // The total objects stored in the gameObjects array
   static unsigned int nextInstanceID;
 
+  static std::vector<glm::vec3> GetAABBVertices(const BoundingBox &bbox);
+
   // Initialize the EntityManager class.
   static void Init();
 
   /**
    * @brief Import a model from path, give a new ID and store in gameObjects
-   * @param path The full or relative path to the model resource file.S
+   * @param path The full or relative path to the model resource file(gltf).
    */
   static GameObject ImportModelFromFile(const char *path,
                                         const char *name = "unnamed");
@@ -48,6 +50,12 @@ public:
   static void Scale(unsigned int id, glm::vec3 scale);
   // Set a gameobject's flags
   static void SetFlags(GameObject go, uint16_t flags);
+  // Unset a gameobject's flags
+  static void UnsetFlags(GameObject go, uint16_t flags);
+  // Get a gameobject's flags
+  static uint16_t GetFlags(GameObject go, uint16_t flags);
+  // Get a gameobject's bounding box in world coordinates
+  static BoundingBox GetAABBWorld(const GameObject &g);
 
 private:
   EntityManager(){};

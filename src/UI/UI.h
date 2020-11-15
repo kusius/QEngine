@@ -5,19 +5,23 @@
 #include "UI/imgui_impl_glfw.h"
 #include "UI/imgui_impl_opengl3.h"
 #include <Metrics/CountDebugRegions.h>
+#include <Managers/EntityManager.h>
 
 #include <cstdint>
+#include <vector>
 
 namespace EditorUI
 {
 
-struct UIInfo
+struct GameData
 {
+  std::vector<GameObject> *gameObjects;
+  int closestRaycastIndex;
   float lastFrameTime;
 };
 
 void SetupContext(GLFWwindow *window);
-void Update(bool &uiWindow, bool &editorHasChanges);
+void Update(bool &uiWindow, bool &editorHasChanges, GameData &gameData);
 void ShaderEditorOpenFile(const char *file);
 void ShaderEditorSaveFile(const char *file, std::string &textToSave);
 void NewFrame();
