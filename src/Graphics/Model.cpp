@@ -14,9 +14,9 @@ void Model::Draw(Shader *shader, Shader *highlightShader)
 void Model::loadModel(string path)
 {
   Assimp::Importer import;
-  const aiScene *scene =
-      import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
-                                aiProcess_CalcTangentSpace);
+  const aiScene *scene = import.ReadFile(
+      path, aiProcess_Triangulate | aiProcess_FlipUVs |
+                aiProcess_CalcTangentSpace | aiProcess_GenBoundingBoxes);
 
   if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
   {
@@ -26,6 +26,7 @@ void Model::loadModel(string path)
 
   directory = path.substr(0, path.find_last_of('/'));
   processNode(scene->mRootNode, scene);
+  consolidateAABBS();
 }
 
 void Model::processNode(aiNode *node, const aiScene *scene)
@@ -46,11 +47,37 @@ void Model::processNode(aiNode *node, const aiScene *scene)
   }
 }
 
+void Model::consolidateAABBS()
+{
+  glm::vec3 min, max;
+  min = meshes[0].boundingBox.mMin;
+  max = meshes[0].boundingBox.mMax;
+
+  for (int i = 1; i < meshes.size(); ++i)
+  {
+    min.x = glm::min(min.x, meshes[i].boundingBox.mMin.x);
+    min.y = glm::min(min.y, meshes[i].boundingBox.mMin.y);
+    min.z = glm::min(min.z, meshes[i].boundingBox.mMin.z);
+
+    max.x = glm::max(max.x, meshes[i].boundingBox.mMax.x);
+    max.y = glm::max(max.y, meshes[i].boundingBox.mMax.y);
+    max.z = glm::max(max.z, meshes[i].boundingBox.mMax.z);
+  }
+  AABB = {min, max};
+}
+
 Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 {
   vector<Vertex> vertices;
   vector<unsigned int> indices;
   vector<Texture> textures;
+  BoundingBox boundingBox;
+
+  // Copy bounding box
+  boundingBox.mMax =
+      glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
+  boundingBox.mMin =
+      glm::vec3(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
 
   // Process vertices (pos, norm, texcoords)
   for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -118,7 +145,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
   }
 
-  return Mesh(vertices, indices, textures);
+  return Mesh(vertices, indices, textures, boundingBox);
 }
 
 vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,

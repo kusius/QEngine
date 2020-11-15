@@ -175,10 +175,20 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
 
     if (ImGui::Begin("Entity Browser", nullptr, 0))
     {
-      // Use ImGui::Selectable to create a list of selectables and update the
-      // FLAG_SELECTED of gameObjects in gameData struct using
-      // EntityManager::SetFlags()
       const int previousSelection = selectedGameObjectIndex;
+      bool selectedFromMouse = false;
+      if (gameData.closestRaycastIndex >= 0)
+      {
+        if (previousSelection >= 0)
+          EntityManager::UnsetFlags(gameData.gameObjects->at(previousSelection),
+                                    FLAG_SELECTED);
+        EntityManager::SetFlags(
+            gameData.gameObjects->at(gameData.closestRaycastIndex),
+            FLAG_SELECTED);
+        selectedGameObjectIndex = gameData.closestRaycastIndex;
+        selectedFromMouse = true;
+      }
+
       for (int i = 0; i < gameData.gameObjects->size(); i++)
       {
         string name = string("(" + to_string(gameData.gameObjects->at(i).id) +
@@ -186,19 +196,23 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
 
         if (ImGui::Selectable(name.c_str(), selectedGameObjectIndex == i))
         {
-          if (previousSelection != i)
+          if (!selectedFromMouse)
           {
-            selectedGameObjectIndex = i;
-            if (previousSelection >= 0)
+            if (previousSelection != i)
+            {
+              selectedGameObjectIndex = i;
+              if (previousSelection >= 0)
+                EntityManager::UnsetFlags(
+                    gameData.gameObjects->at(previousSelection), FLAG_SELECTED);
+              EntityManager::SetFlags(gameData.gameObjects->at(i),
+                                      FLAG_SELECTED);
+            }
+            else if (previousSelection == i && previousSelection >= 0)
+            {
+              selectedGameObjectIndex = -1;
               EntityManager::UnsetFlags(
                   gameData.gameObjects->at(previousSelection), FLAG_SELECTED);
-            EntityManager::SetFlags(gameData.gameObjects->at(i), FLAG_SELECTED);
-          }
-          else if (previousSelection == i && previousSelection >= 0)
-          {
-            selectedGameObjectIndex = -1;
-            EntityManager::UnsetFlags(
-                gameData.gameObjects->at(previousSelection), FLAG_SELECTED);
+            }
           }
         }
       }

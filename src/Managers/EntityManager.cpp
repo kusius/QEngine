@@ -1,11 +1,24 @@
 #include "EntityManager.h"
-#include "Graphics/Model.h"
+#include <Graphics/Model.h>
 
 using namespace std;
 
 GameObjects EntityManager::gameObjects;
 unsigned int EntityManager::nextInstanceID;
+GameObjectBoundingBoxes EntityManager::boundingBoxes;
+std::vector<BoundingBox> defaultBoundingBoxes;
 std::map<string, unsigned int> EntityManager::loadedModels;
+
+/**
+ * @brief Perform a transform of an Axis-Aligned bounding box, keeping it AA.
+ *
+ * @param bbox the original bounding box of the model. Don't put already
+ * transformed bounding boxes in this function
+ * @param transform the matrix that holds the transform (translation, rotation
+ * and scaling)
+ */
+static BoundingBox transformBoundingBox(const BoundingBox &bbox,
+                                        const glm::mat4 &transform);
 
 void EntityManager::Init()
 {
@@ -35,6 +48,7 @@ GameObject EntityManager::ImportModelFromFile(const char *path,
     gos->angles[it->second].push_back(glm::vec3(0.0f));
     gos->scales[it->second].push_back(glm::vec3(1.0f));
     gos->flags[it->second].push_back(0x0000);
+    boundingBoxes[it->second].push_back(defaultBoundingBoxes[it->second]);
   }
   else
   {
@@ -48,6 +62,7 @@ GameObject EntityManager::ImportModelFromFile(const char *path,
     thisGameObject.modelIndex = gos->numMeshes.size();
     loadedModels[std::string(path)] = gos->numMeshes.size();
     gos->numMeshes.push_back(m.meshes.size());
+    std::vector<BoundingBox> aabbs;
     for (unsigned int i = 0; i < m.meshes.size(); i++)
     {
       // Mesh data
@@ -63,6 +78,7 @@ GameObject EntityManager::ImportModelFromFile(const char *path,
 
       gos->textures.insert(gos->textures.end(), m.meshes[i].textures.begin(),
                            m.meshes[i].textures.end());
+      aabbs.push_back(m.meshes[i].boundingBox);
     }
 
     // World placement data
@@ -70,12 +86,48 @@ GameObject EntityManager::ImportModelFromFile(const char *path,
     gos->positions.push_back({glm::vec3(0.0f)});
     gos->angles.push_back({glm::vec3(0.0f)});
     gos->scales.push_back({glm::vec3(1.0f)});
+    // Bounding boxes
+    boundingBoxes.push_back({m.AABB});
+    defaultBoundingBoxes.push_back(m.AABB);
     // State data
     gos->flags.push_back({0x0000});
   }
 
   nextInstanceID++;
   return thisGameObject;
+}
+
+glm::mat4 aabbModelMatrix(const BoundingBox &bbox)
+{
+  // 1. calculate size (scale)
+  glm::vec3 scale =
+      glm::vec3(bbox.mMax.x - bbox.mMin.x, bbox.mMax.y - bbox.mMin.y,
+                bbox.mMax.z - bbox.mMin.z);
+  // 2. calculate center (position)
+  glm::vec3 center = glm::vec3((bbox.mMin.x + bbox.mMax.x) / 2,
+                               (bbox.mMin.y + bbox.mMax.y) / 2,
+                               (bbox.mMin.z + bbox.mMax.z) / 2);
+  // perform translations
+  glm::mat4 transform = glm::mat4(1.0f);
+  // translate
+  transform = glm::translate(transform, center);
+  // scale
+  transform = glm::scale(transform, glm::vec3(scale));
+  return transform;
+}
+
+BoundingBox EntityManager::GetAABBWorld(const GameObject &g)
+{
+  BoundingBox box = defaultBoundingBoxes[g.modelIndex];
+  glm::mat4 model =
+      EntityManager::gameObjects.modelMatrices[g.modelIndex][g.instanceIndex];
+
+  glm::vec4 worldMin = model * glm::vec4(box.mMin, 1.0f); // point
+  glm::vec4 worldMax = model * glm::vec4(box.mMax, 1.0f); // point
+
+  BoundingBox result = {glm::vec3(worldMin.x, worldMin.y, worldMin.z),
+                        glm::vec3(worldMax.x, worldMax.y, worldMax.z)};
+  return result;
 }
 
 void EntityManager::TransformModel(GameObject go, glm::vec3 move,
@@ -99,7 +151,50 @@ void EntityManager::TransformModel(GameObject go, glm::vec3 move,
     transform = glm::scale(transform, scale);
     EntityManager::gameObjects.modelMatrices[go.modelIndex][go.instanceIndex] =
         transform;
+
+    BoundingBox baseBox = defaultBoundingBoxes[go.modelIndex];
+    EntityManager::boundingBoxes[go.modelIndex][go.instanceIndex] =
+        transformBoundingBox(baseBox, transform);
   }
+}
+
+std::vector<glm::vec3> EntityManager::GetAABBVertices(const BoundingBox &bbox)
+{
+  std::vector<glm::vec3> vertices(8, glm::vec3(0.0f));
+  vertices[0] = bbox.mMin;
+  vertices[1] = glm::vec3(bbox.mMin.x, bbox.mMin.y, bbox.mMax.z);
+  vertices[2] = glm::vec3(bbox.mMin.x, bbox.mMax.y, bbox.mMin.z);
+  vertices[3] = glm::vec3(bbox.mMax.x, bbox.mMin.y, bbox.mMin.z);
+  vertices[4] = glm::vec3(bbox.mMin.x, bbox.mMax.y, bbox.mMax.z);
+  vertices[5] = glm::vec3(bbox.mMax.x, bbox.mMin.y, bbox.mMax.z);
+  vertices[6] = glm::vec3(bbox.mMax.x, bbox.mMax.y, bbox.mMin.z);
+  vertices[7] = bbox.mMax;
+
+  return vertices;
+}
+
+static BoundingBox transformBoundingBox(const BoundingBox &bbox,
+                                        const glm::mat4 &transform)
+{
+  std::vector<glm::vec3> vertices = EntityManager::GetAABBVertices(bbox);
+
+  glm::vec3 newMin =
+      glm::vec3(1.0f, 1.0f, 1.0f) * std::numeric_limits<float>::max();
+  glm::vec3 newMax =
+      glm::vec3(1.0f, 1.0f, 1.0f) * std::numeric_limits<float>::min();
+  for (int i = 0; i < 8; ++i)
+  {
+    glm::vec4 transformed = transform * glm::vec4(vertices[i].x, vertices[i].y,
+                                                  vertices[i].z, 1.0f);
+
+    for (int j = 0; j < 3; ++j)
+    {
+      newMin[j] = glm::min(newMin[j], transformed[j]);
+      newMax[j] = glm::max(newMax[j], transformed[j]);
+    }
+  }
+  BoundingBox newbbox = {newMin, newMax};
+  return newbbox;
 }
 
 void EntityManager::SetFlags(GameObject go, uint16_t flags)

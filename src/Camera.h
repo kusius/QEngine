@@ -6,7 +6,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <vector>
-
 // Defines several possible options for camera movement. Used as abstraction to
 // stay away from window-system specific input methods
 enum Camera_Movement
@@ -19,6 +18,18 @@ enum Camera_Movement
   DOWN
 };
 
+struct Ray
+{
+  Ray(glm::vec3 origin, glm::vec3 direction) : o(origin), d(direction){};
+  Ray()
+      : o(glm::vec3(0.0f)),
+        d(glm::vec3(1.0f)){}; // default ray: from origin and direction 1,1,1
+
+  glm::vec3 o; // origin (camera position)
+  glm::vec3 d; // direction
+  glm::vec3 id = 1.0f / d;
+};
+
 // Default camera values
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
@@ -26,8 +37,10 @@ const float SPEED = 2.5f;
 const float SENSITIVTY = 0.15f;
 const float ZOOM = 45.0f;
 
-// An abstract camera class that processes input and calculates the
-// corresponding Euler Angles, Vectors and Matrices for use in OpenGL
+/**
+ * @brief An abstract camera class that processes input and calculates the
+ *        corresponding Euler Angles, Vectors and Matrices for use in OpenGL
+ */
 class Camera
 {
 public:
@@ -138,11 +151,12 @@ public:
       Zoom = 45.0f;
   }
 
-  bool rayCheck(glm::vec3 center, glm::vec3 rayWorld, float *distance = nullptr)
+  bool raySphereIntersection(glm::vec3 center, glm::vec3 rayWorld,
+                             float *distance = nullptr)
   {
     int distanceToClosest = INT_MAX;
     bool result = false;
-    int radius = 1.2;
+    int radius = 1;
 
     glm::vec3 cameraToCeterVec = Position - center;
 
@@ -168,7 +182,25 @@ public:
     return result;
   }
 
-  glm::vec3 mouseposToRayWorld(double xpos, double ypos, int width, int height)
+  bool rayAABBIntersection(const glm::vec3 &min, const glm::vec3 &max,
+                           const Ray &r, float *distance = nullptr)
+  {
+    float tmin = std::numeric_limits<float>::min();
+    float tmax = std::numeric_limits<float>::max();
+
+    for (int i = 0; i < 3; ++i)
+    {
+      float t1 = (min[i] - r.o[i]) * r.id[i];
+      float t2 = (max[i] - r.o[i]) * r.id[i];
+
+      tmin = glm::max(tmin, glm::min(t1, t2));
+      tmax = glm::min(tmax, glm::max(t1, t2));
+    }
+
+    return tmax > glm::max(tmin, 0.0f);
+  }
+
+  Ray mouseposToRayWorld(double xpos, double ypos, int width, int height)
   {
     // Pixels to NDC
     float xndc = (2.0 * xpos / width) - 1.0;
@@ -176,7 +208,7 @@ public:
     float zndc = 1.0f;
     glm::vec3 rayNDC(xndc, yndc, zndc);
     // NDC with homogeneous (clip space)
-    glm::vec4 rayClipSpace(rayNDC.x, rayNDC.y, -rayNDC.z, 1.0);
+    glm::vec4 rayClipSpace(rayNDC.x, rayNDC.y, -1.0, 1.0);
     // clip to eye (camera coords)
     glm::vec4 rayEye = glm::inverse(projectionMatrix) * rayClipSpace;
     rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0, 0.0);
@@ -184,7 +216,8 @@ public:
     glm::vec4 rayWorldHom = glm::inverse(GetViewMatrix()) * rayEye;
     glm::vec3 rayWorld =
         glm::normalize(glm::vec3(rayWorldHom.x, rayWorldHom.y, rayWorldHom.z));
-    return rayWorld;
+
+    return Ray(Position, rayWorld);
   }
 
 private:

@@ -168,6 +168,48 @@ void Renderer::DrawCube(Texture2D &diffuseMap, Texture2D &specularMap,
   glBindVertexArray(0);
 }
 
+void Renderer::DrawCube(glm::vec3 position, glm::vec3 scale, GLfloat rotation,
+                        glm::vec3 color)
+{
+  // perform translations
+  glm::mat4 transform = glm::mat4(1.0f);
+  // translate
+  transform = glm::translate(transform, position);
+  // scale
+  transform = glm::scale(transform, glm::vec3(scale));
+  // rotate
+  transform = glm::rotate(transform, rotation * glm::radians(50.0f),
+                          glm::vec3(0.5f, 1.0f, 0.0f));
+
+  // set the uniforms
+  this->shader->Use();
+  this->shader->SetMatrix4("model", transform);
+
+  glBindVertexArray(this->quadVAO);
+  // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+  glDrawArrays(GL_TRIANGLES, 0, 36);
+  glBindVertexArray(0);
+}
+
+void Renderer::DrawBoundingBox(const BoundingBox &bbox, GLboolean wireframe)
+{
+  // 1. calculate size (scale)
+  glm::vec3 scale =
+      glm::vec3(bbox.mMax.x - bbox.mMin.x, bbox.mMax.y - bbox.mMin.y,
+                bbox.mMax.z - bbox.mMin.z);
+  // 2. calculate center (position)
+  glm::vec3 center = glm::vec3((bbox.mMin.x + bbox.mMax.x) / 2,
+                               (bbox.mMin.y + bbox.mMax.y) / 2,
+                               (bbox.mMin.z + bbox.mMax.z) / 2);
+
+  // 3. rotation is always zero (axis aligned)
+  if (wireframe)
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  DrawCube(center, scale, 0.0f, glm::vec3(1.0f));
+  if (wireframe)
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
 void Renderer::DrawPointLights(glm::vec3 pointLightPositions[],
                                unsigned int numLights, glm::vec3 scale,
                                GLfloat rotation, glm::vec3 color)

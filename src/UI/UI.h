@@ -16,6 +16,7 @@ namespace EditorUI
 struct GameData
 {
   std::vector<GameObject> *gameObjects;
+  int closestRaycastIndex;
   float lastFrameTime;
 };
 

@@ -33,6 +33,7 @@ void ShaderStaticData(Shader *shader, Shader *lightShader);
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 std::vector<GameObject> gameObjects;
 glm::mat4 projection = glm::mat4(1);
+EditorUI::GameData gameDataForEditor;
 
 Lights lights = {};
 
@@ -137,8 +138,7 @@ void SetupOpenGL()
 void PrintLibVersions()
 {
   std::cout << "Assimp: " << aiGetVersionMajor() << "." << aiGetVersionMinor()
-            << "." << aiGetVersionPatch() <<
-      std::endl;
+            << "." << aiGetVersionPatch() << std::endl;
   std::cout << "OpenGL: " << glGetString(GL_VERSION) << std::endl;
   std::cout << "GLSL: " << glGetString(GL_SHADING_LANGUAGE_VERSION)
             << std::endl;
@@ -150,25 +150,29 @@ void PrintLibVersions()
 int SelectClosestObject(double mousex, double mousey, int width, int height,
                         std::vector<GameObject> *gameObjects)
 {
-  glm::vec3 rayWorld = camera.mouseposToRayWorld(mousex, mousey, width, height);
   float minDistance = std::numeric_limits<float>::max();
   float distance;
   int closest = -1;
+  // Ray starting from camera in world coordinates
+  Ray rayWorld = camera.mouseposToRayWorld(mousex, mousey, width, height);
 
   for (int i = 0; i < gameObjects->size(); i++)
   {
     int modelIndex = gameObjects->at(i).modelIndex;
     int instanceIndex = gameObjects->at(i).instanceIndex;
+    // Bounding box in world coordinates
+    BoundingBox box = EntityManager::GetAABBWorld(gameObjects->at(i));
 
-    glm::vec3 center =
-        EntityManager::gameObjects.positions[modelIndex][instanceIndex];
-
-    if (camera.rayCheck(center, rayWorld, &distance))
+    if (camera.rayAABBIntersection(box.mMin, box.mMax, rayWorld, nullptr))
     {
+
+      float d1 = glm::distance(rayWorld.o, box.mMin);
+      float d2 = glm::distance(rayWorld.o, box.mMax);
+      distance = glm::min(d1, d2);
       if (distance < minDistance)
       {
-        minDistance = distance;
         closest = i;
+        minDistance = distance;
       }
     }
     // No intersection, unmark object if it was marked previously
@@ -178,10 +182,9 @@ int SelectClosestObject(double mousex, double mousey, int width, int height,
     // If we found any, mark it
     if (closest >= 0)
       gameObjects->at(i).rayCastSelected = true;
-    std::cout << "Raycast closest object: " << closest << std::endl;
-
-    return closest;
   }
+  std::cout << "Raycast closest object: " << closest << std::endl;
+  return closest;
 }
 
 int main(int argc, char **argv)
@@ -260,7 +263,7 @@ int main(int argc, char **argv)
   gameObjects.push_back(table2);
   gameObjects.push_back(table3);
   gameObjects.push_back(sofa1);
-  EditorUI::GameData gameDataForEditor = {&gameObjects, 0};
+  gameDataForEditor = {&gameObjects, 0};
 
   // EntityManager::TransformModel(table3,
   // glm::vec3(0.0f, -2.0f, 6.5f),
@@ -345,6 +348,14 @@ int main(int argc, char **argv)
     lightShader->SetMatrix4("projection", projection);
     lightRenderer->DrawPointLights(lights.pointLightPositions,
                                    lights.nPointLights, glm::vec3(0.2f));
+    /*
+for (int i = 0; i < gameObjects.size(); ++i)
+{
+GameObject g = gameObjects.at(i);
+lightRenderer->DrawBoundingBox(
+EntityManager::boundingBoxes[g.modelIndex][g.instanceIndex], GL_TRUE);
+}
+*/
 
     EditorUI::Render();
 
@@ -418,11 +429,13 @@ void ShaderStaticData(Shader *shader, Shader *lightShader)
 
 void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods)
 {
+
   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
   {
     double xpos, ypos;
     glfwGetCursorPos(window, &xpos, &ypos);
-    SelectClosestObject(xpos, ypos, screenWidth, screenHeight, &gameObjects);
+    gameDataForEditor.closestRaycastIndex = SelectClosestObject(
+        xpos, ypos, screenWidth, screenHeight, &gameObjects);
   }
 }
 

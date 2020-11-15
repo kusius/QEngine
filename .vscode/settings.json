@@ -72,5 +72,6 @@
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "editor.renderIndentGuides": false,
-    "C_Cpp.dimInactiveRegions": false
+    "C_Cpp.dimInactiveRegions": false,
+    "cmake.configureOnOpen": true
 }
