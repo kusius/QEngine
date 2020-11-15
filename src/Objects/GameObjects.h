@@ -50,8 +50,6 @@ struct GameObjects
   std::vector<std::vector<uint16_t>> flags;
 };
 
-typedef std::vector<std::vector<BoundingBox>> GameObjectBoundingBoxes;
-
 struct GameObjectsInstanced
 {
   // TODO

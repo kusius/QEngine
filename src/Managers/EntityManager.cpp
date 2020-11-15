@@ -5,7 +5,6 @@ using namespace std;
 
 GameObjects EntityManager::gameObjects;
 unsigned int EntityManager::nextInstanceID;
-GameObjectBoundingBoxes EntityManager::boundingBoxes;
 std::vector<BoundingBox> defaultBoundingBoxes;
 std::map<string, unsigned int> EntityManager::loadedModels;
 
@@ -48,7 +47,6 @@ GameObject EntityManager::ImportModelFromFile(const char *path,
     gos->angles[it->second].push_back(glm::vec3(0.0f));
     gos->scales[it->second].push_back(glm::vec3(1.0f));
     gos->flags[it->second].push_back(0x0000);
-    boundingBoxes[it->second].push_back(defaultBoundingBoxes[it->second]);
   }
   else
   {
@@ -86,8 +84,7 @@ GameObject EntityManager::ImportModelFromFile(const char *path,
     gos->positions.push_back({glm::vec3(0.0f)});
     gos->angles.push_back({glm::vec3(0.0f)});
     gos->scales.push_back({glm::vec3(1.0f)});
-    // Bounding boxes
-    boundingBoxes.push_back({m.AABB});
+
     defaultBoundingBoxes.push_back(m.AABB);
     // State data
     gos->flags.push_back({0x0000});
@@ -116,6 +113,7 @@ glm::mat4 aabbModelMatrix(const BoundingBox &bbox)
   return transform;
 }
 
+// NOTE: If we need, we can store this world AABB, per object for quicker access
 BoundingBox EntityManager::GetAABBWorld(const GameObject &g)
 {
   BoundingBox box = defaultBoundingBoxes[g.modelIndex];
@@ -149,12 +147,9 @@ void EntityManager::TransformModel(GameObject go, glm::vec3 move,
     transform = glm::rotate(transform, glm::radians(rotation.z),
                             glm::vec3(0.0f, 0.0f, 1.0f));
     transform = glm::scale(transform, scale);
+
     EntityManager::gameObjects.modelMatrices[go.modelIndex][go.instanceIndex] =
         transform;
-
-    BoundingBox baseBox = defaultBoundingBoxes[go.modelIndex];
-    EntityManager::boundingBoxes[go.modelIndex][go.instanceIndex] =
-        transformBoundingBox(baseBox, transform);
   }
 }
 
@@ -184,9 +179,7 @@ static BoundingBox transformBoundingBox(const BoundingBox &bbox,
       glm::vec3(1.0f, 1.0f, 1.0f) * std::numeric_limits<float>::min();
   for (int i = 0; i < 8; ++i)
   {
-    glm::vec4 transformed = transform * glm::vec4(vertices[i].x, vertices[i].y,
-                                                  vertices[i].z, 1.0f);
-
+    glm::vec4 transformed = transform * glm::vec4(vertices[i], 1.0f);
     for (int j = 0; j < 3; ++j)
     {
       newMin[j] = glm::min(newMin[j], transformed[j]);

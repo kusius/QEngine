@@ -348,14 +348,18 @@ int main(int argc, char **argv)
     lightShader->SetMatrix4("projection", projection);
     lightRenderer->DrawPointLights(lights.pointLightPositions,
                                    lights.nPointLights, glm::vec3(0.2f));
-    /*
-for (int i = 0; i < gameObjects.size(); ++i)
-{
-GameObject g = gameObjects.at(i);
-lightRenderer->DrawBoundingBox(
-EntityManager::boundingBoxes[g.modelIndex][g.instanceIndex], GL_TRUE);
-}
-*/
+
+#ifdef QDEBUG
+    // TODO: Put the bounding box drawing in a shortcut or as an option in
+    // editor
+
+    for (int i = 0; i < gameObjects.size(); ++i)
+    {
+      GameObject g = gameObjects.at(i);
+      lightRenderer->DrawBoundingBox(EntityManager::GetAABBWorld(g), GL_TRUE);
+    }
+
+#endif
 
     EditorUI::Render();
 

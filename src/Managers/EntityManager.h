@@ -15,10 +15,6 @@ public:
   static std::map<string, unsigned int> loadedModels;
   // The total objects stored in the gameObjects array
   static unsigned int nextInstanceID;
-  // Indexec by @see GameObject#modelIndex
-  static std::vector<std::vector<BoundingBox>> modelAABBS;
-
-  static GameObjectBoundingBoxes boundingBoxes;
 
   static std::vector<glm::vec3> GetAABBVertices(const BoundingBox &bbox);
 
