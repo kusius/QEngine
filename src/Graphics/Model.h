@@ -1,17 +1,17 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+#include "Shader.h"
+#include "Mesh.h"
+
+#include <Thirdparty/assimp/Importer.hpp>
+#include <Thirdparty/assimp/scene.h>
+#include <Thirdparty/assimp/postprocess.h>
+#include <Thirdparty/assimp/aabb.h>
+
 #include <vector>
 #include <string>
 #include <iostream>
-
-#include "Thirdparty/assimp/Importer.hpp"
-#include "Thirdparty/assimp/scene.h"
-#include "Thirdparty/assimp/postprocess.h"
-#include "Thirdparty/assimp/aabb.h"
-
-#include "Shader.h"
-#include "Mesh.h"
 
 using namespace std;
 

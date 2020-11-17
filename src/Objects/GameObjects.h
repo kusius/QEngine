@@ -3,9 +3,10 @@
 
 #define MAX_POINT_LIGHTS 4
 
-#include "Thirdparty/glm/glm.hpp"
-#include "Graphics/Mesh.h"
+#include <Thirdparty/glm/glm.hpp>
 #include <Thirdparty/assimp/aabb.h>
+#include <Graphics/Mesh.h>
+
 #include <vector>
 
 #define MAX_GAME_OBJECTS 512

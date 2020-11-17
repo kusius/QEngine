@@ -3,14 +3,13 @@
 
 // A 3D mesh storage and rednering class
 
-#include <string>
-#include <vector>
-
-#include "thirdparty/glm/glm.hpp"
-#include "thirdparty/glad/glad.h"
+#include <Thirdparty/glm/glm.hpp>
+#include <Thirdparty/glad/glad.h>
 
 #include "Shader.h"
 
+#include <string>
+#include <vector>
 using namespace std;
 
 struct Vertex

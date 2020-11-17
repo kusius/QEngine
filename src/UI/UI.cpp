@@ -1,11 +1,11 @@
+#include <UI/TextEditor.h>
+#include <UI/UI.h>
+#include <Platform/Win64Platform.h>
+
 #include <fstream>
 #include <streambuf>
 #include <string>
 #include <iostream>
-
-#include <UI/TextEditor.h>
-#include <UI/UI.h>
-#include <Platform/Win64Platform.h>
 
 /**
  * @brief GLFW KEYS

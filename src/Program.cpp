@@ -3,14 +3,13 @@
 #include <Graphics/SpriteRenderer.h>
 #include <Managers/EntityManager.h>
 #include <Camera.h>
-#include <Objects/Entity.h>
 #include <ResourceManager.h>
 #include <Thirdparty/assimp/version.h>
 #include <Thirdparty/glad/glad.h>
 #include <Thirdparty/glfw/glfw3.h>
 #include <UI/UI.h>
-#include <limits>
 
+#include <limits>
 #include <iostream>
 #include <string>
 

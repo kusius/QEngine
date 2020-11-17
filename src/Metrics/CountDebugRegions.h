@@ -1,10 +1,11 @@
 #ifndef COUNT_DEBUG_REGIONS_H
 #define COUNT_DEBUG_REGIONS_H
 
+#include <Platform/Win64Platform.h>
+
 #include <cstdint>
 #include <vector>
 #include <string>
-#include <Platform/Win64Platform.h>
 
 #define NUM_FRAMES_BATCH 60
 

@@ -252,13 +252,7 @@ void Renderer::DrawSprite(Texture2D &texture)
   // glBindVertexArray(0);//no need to unbind every time but whaduheck
 }
 
-void Renderer::DrawEntities(const std::vector<Entity> &entities)
-{
-  for (Entity e : entities)
-  {
-    e.Draw(this->shader, this->highlightShader);
-  }
-}
+
 
 void Renderer::DrawGameObjects()
 {

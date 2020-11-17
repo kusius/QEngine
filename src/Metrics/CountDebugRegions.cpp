@@ -1,6 +1,7 @@
-#include <Platform/Win64Platform.h>
-#include <iostream>
 #include "CountDebugRegions.h"
+#include <Platform/Win64Platform.h>
+
+#include <iostream>
 
 using std::cout;
 using std::endl;

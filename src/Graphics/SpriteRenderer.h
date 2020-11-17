@@ -11,15 +11,18 @@
 #ifndef SPRITE_RENDERER_H
 #define SPRITE_RENDERER_H
 
-#include <vector>
-
-#include "Thirdparty/glad/glad.h"
-#include "Thirdparty/glm/glm.hpp"
-#include "Thirdparty/glm/gtc/matrix_transform.hpp"
-
-#include "Objects/Entity.h"
 #include "Texture.h"
 #include "Shader.h"
+
+#include <Thirdparty/glad/glad.h>
+#include <Thirdparty/glm/glm.hpp>
+#include <Thirdparty/glm/gtc/matrix_transform.hpp>
+#include <Graphics/Model.h>
+#include <Graphics/Shader.h>
+#include <Graphics/Model.h>
+#include <Graphics/Shader.h>
+
+#include <vector>
 
 class Renderer
 {
@@ -44,7 +47,6 @@ public:
                        glm::vec3 color = glm::vec3(1.0f));
   void DrawSprite(Texture2D &texture);
 
-  void DrawEntities(const std::vector<Entity> &entities);
 
   /**
    * @brief Draws the EntityManager::gameObjects SOA.
