@@ -265,6 +265,7 @@ int main(int argc, char **argv)
   gameDataForEditor = {&gameObjects, 0};
   gameDataForEditor.view = &view;
   gameDataForEditor.projection = &projection;
+  gameDataForEditor.bRenderBoundingBoxes = false;
 
   // EntityManager::TransformModel(table3,
   // glm::vec3(0.0f, -2.0f, 6.5f),
@@ -351,13 +352,13 @@ int main(int argc, char **argv)
                                    lights.nPointLights, glm::vec3(0.2f));
 
 #ifdef QDEBUG
-    // TODO: Put the bounding box drawing in a shortcut or as an option in
-    // editor
-
-    for (int i = 0; i < gameObjects.size(); ++i)
+    if (gameDataForEditor.bRenderBoundingBoxes)
     {
-      GameObject g = gameObjects.at(i);
-      lightRenderer->DrawBoundingBox(EntityManager::GetAABBWorld(g), GL_TRUE);
+      for (int i = 0; i < gameObjects.size(); ++i)
+      {
+        GameObject g = gameObjects.at(i);
+        lightRenderer->DrawBoundingBox(EntityManager::GetAABBWorld(g), GL_TRUE);
+      }
     }
 
 #endif

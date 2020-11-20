@@ -20,7 +20,8 @@ struct GameData
   int closestRaycastIndex;
   glm::mat4 *view, *projection;
   float lastFrameTime;
-  bool mSnapTranslation;
+  bool bSnapTranslation;
+  bool bRenderBoundingBoxes;
 };
 
 void SetupContext(GLFWwindow *window);

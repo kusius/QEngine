@@ -1,16 +1,12 @@
 #include <UI/TextEditor.h>
 #include <UI/UI.h>
 #include <Platform/Win64Platform.h>
+#include <Thirdparty/glfw/glfw3.h>
 
 #include <fstream>
 #include <streambuf>
 #include <string>
 #include <iostream>
-
-/**
- * @brief GLFW KEYS
- */
-#define GLFW_KEY_S 83
 
 static TextEditor editor;
 static auto lang = TextEditor::LanguageDefinition::GLSL();
@@ -76,89 +72,93 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
   }
   if (uiWindow)
   {
-    ImGui::Begin("Shader Editor", nullptr,
-                 ImGuiWindowFlags_HorizontalScrollbar |
-                     ImGuiWindowFlags_MenuBar);
-    ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-
-    if (io.KeyCtrl && io.KeysDown[GLFW_KEY_S])
+    if (ImGui::Begin("Shader Editor", nullptr,
+                     ImGuiWindowFlags_HorizontalScrollbar |
+                         ImGuiWindowFlags_MenuBar))
     {
-      std::string textToSave = editor.GetText();
-      EditorUI::ShaderEditorSaveFile(currentFile.c_str(), textToSave);
-      hasChanges = true;
-    }
+      ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
 
-    if (ImGui::BeginMenuBar())
-    {
-      bool ro = editor.IsReadOnly();
-      if (ImGui::BeginMenu("File"))
+      if (io.KeyCtrl && io.KeysDown[GLFW_KEY_S])
       {
-        if (ImGui::MenuItem("Save") || (io.KeyCtrl && io.KeysDown[GLFW_KEY_S]))
+        std::string textToSave = editor.GetText();
+        EditorUI::ShaderEditorSaveFile(currentFile.c_str(), textToSave);
+        hasChanges = true;
+      }
+
+      if (ImGui::BeginMenuBar())
+      {
+        bool ro = editor.IsReadOnly();
+        if (ImGui::BeginMenu("File"))
         {
-          std::string textToSave = editor.GetText();
-          EditorUI::ShaderEditorSaveFile(currentFile.c_str(), textToSave);
-          hasChanges = true;
+          if (ImGui::MenuItem("Save") ||
+              (io.KeyCtrl && io.KeysDown[GLFW_KEY_S]))
+          {
+            std::string textToSave = editor.GetText();
+            EditorUI::ShaderEditorSaveFile(currentFile.c_str(), textToSave);
+            hasChanges = true;
+          }
+          ImGui::EndMenu();
         }
-        ImGui::EndMenu();
+        if (ImGui::BeginMenu("Edit"))
+        {
+
+          if (ImGui::MenuItem("Read-only mode", nullptr, &ro))
+            editor.SetReadOnly(ro);
+          ImGui::Separator();
+
+          if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr,
+                              !ro && editor.CanUndo()))
+            editor.Undo();
+          if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr,
+                              !ro && editor.CanRedo()))
+            editor.Redo();
+
+          ImGui::Separator();
+
+          if (ImGui::MenuItem("Copy", "Ctrl-C", nullptr, editor.HasSelection()))
+            editor.Copy();
+          if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr,
+                              !ro && editor.HasSelection()))
+            editor.Cut();
+          if (ImGui::MenuItem("Delete", "Del", nullptr,
+                              !ro && editor.HasSelection()))
+            editor.Delete();
+          if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr,
+                              !ro && ImGui::GetClipboardText() != nullptr))
+            editor.Paste();
+
+          ImGui::Separator();
+
+          if (ImGui::MenuItem("Select all", nullptr, nullptr))
+            editor.SetSelection(
+                TextEditor::Coordinates(),
+                TextEditor::Coordinates(editor.GetTotalLines(), 0));
+
+          ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View"))
+        {
+          if (ImGui::MenuItem("Dark palette"))
+            editor.SetPalette(TextEditor::GetDarkPalette());
+          if (ImGui::MenuItem("Light palette"))
+            editor.SetPalette(TextEditor::GetLightPalette());
+          if (ImGui::MenuItem("Retro blue palette"))
+            editor.SetPalette(TextEditor::GetRetroBluePalette());
+          ImGui::EndMenu();
+        }
+
+        if (ImGui::Button("Close"))
+          uiWindow = false;
+
+        ImGui::EndMenuBar();
+        ImGui::Text(
+            "%6d/%-6d %6d lines  | %s | %s | %s | %s", cpos.mLine + 1,
+            cpos.mColumn + 1, editor.GetTotalLines(),
+            editor.IsOverwrite() ? "Ovr" : "Ins", editor.CanUndo() ? "*" : " ",
+            editor.GetLanguageDefinition().mName.c_str(), currentFile.c_str());
+        editor.Render("ShaderEditor");
       }
-      if (ImGui::BeginMenu("Edit"))
-      {
-
-        if (ImGui::MenuItem("Read-only mode", nullptr, &ro))
-          editor.SetReadOnly(ro);
-        ImGui::Separator();
-
-        if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr,
-                            !ro && editor.CanUndo()))
-          editor.Undo();
-        if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr, !ro && editor.CanRedo()))
-          editor.Redo();
-
-        ImGui::Separator();
-
-        if (ImGui::MenuItem("Copy", "Ctrl-C", nullptr, editor.HasSelection()))
-          editor.Copy();
-        if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr,
-                            !ro && editor.HasSelection()))
-          editor.Cut();
-        if (ImGui::MenuItem("Delete", "Del", nullptr,
-                            !ro && editor.HasSelection()))
-          editor.Delete();
-        if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr,
-                            !ro && ImGui::GetClipboardText() != nullptr))
-          editor.Paste();
-
-        ImGui::Separator();
-
-        if (ImGui::MenuItem("Select all", nullptr, nullptr))
-          editor.SetSelection(
-              TextEditor::Coordinates(),
-              TextEditor::Coordinates(editor.GetTotalLines(), 0));
-
-        ImGui::EndMenu();
-      }
-
-      if (ImGui::BeginMenu("View"))
-      {
-        if (ImGui::MenuItem("Dark palette"))
-          editor.SetPalette(TextEditor::GetDarkPalette());
-        if (ImGui::MenuItem("Light palette"))
-          editor.SetPalette(TextEditor::GetLightPalette());
-        if (ImGui::MenuItem("Retro blue palette"))
-          editor.SetPalette(TextEditor::GetRetroBluePalette());
-        ImGui::EndMenu();
-      }
-
-      if (ImGui::Button("Close"))
-        uiWindow = false;
-
-      ImGui::EndMenuBar();
-      ImGui::Text(
-          "%6d/%-6d %6d lines  | %s | %s | %s | %s", cpos.mLine + 1,
-          cpos.mColumn + 1, editor.GetTotalLines(),
-          editor.IsOverwrite() ? "Ovr" : "Ins", editor.CanUndo() ? "*" : " ",
-          editor.GetLanguageDefinition().mName.c_str(), currentFile.c_str());
-      editor.Render("ShaderEditor");
     }
     ImGui::End(); // Shader Editor
 
@@ -227,9 +227,12 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
 
       ImGuizmo::BeginFrame();
       ImGui::Begin("Editor");
+      if (ImGui::RadioButton("Draw AABBs", gameData.bRenderBoundingBoxes))
+        gameData.bRenderBoundingBoxes = !gameData.bRenderBoundingBoxes;
+
       ImGuizmo::SetID(0);
       EditTransform(glm::value_ptr(*gameData.view),
-                    glm::value_ptr(*gameData.projection), (float*)matrix);
+                    glm::value_ptr(*gameData.projection), (float *)matrix);
       ImGui::End(); // Transform Guizmo
     }
   }
@@ -239,13 +242,13 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
 void EditorUI::EditTransform(const float *view, const float *projection,
                              float *matrix)
 {
-  static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::ROTATE);
+  static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::TRANSLATE);
   static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
-  if (ImGui::IsKeyPressed(90))
+  if (ImGui::IsKeyPressed(GLFW_KEY_Z))
     mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
-  if (ImGui::IsKeyPressed(69))
+  if (ImGui::IsKeyPressed(GLFW_KEY_X))
     mCurrentGizmoOperation = ImGuizmo::ROTATE;
-  if (ImGui::IsKeyPressed(82)) // r Key
+  if (ImGui::IsKeyPressed(GLFW_KEY_C))
     mCurrentGizmoOperation = ImGuizmo::SCALE;
   if (ImGui::RadioButton("Translate",
                          mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
@@ -274,7 +277,7 @@ void EditorUI::EditTransform(const float *view, const float *projection,
       mCurrentGizmoMode = ImGuizmo::WORLD;
   }
   static bool useSnap(false);
-  if (ImGui::IsKeyPressed(83))
+  if (ImGui::IsKeyPressed(GLFW_KEY_MINUS))
     useSnap = !useSnap;
   ImGui::Checkbox("", &useSnap);
   ImGui::SameLine();
