@@ -14,6 +14,7 @@ FILE(GLOB UI_SOURCE_FILES
 UI/imgui*.cpp
 UI/UI.cpp
 UI/TextEditor.cpp
+UI/ImGuizmo.cpp
 )
 
 set(SOURCE_FILES

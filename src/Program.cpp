@@ -263,6 +263,8 @@ int main(int argc, char **argv)
   gameObjects.push_back(table3);
   gameObjects.push_back(sofa1);
   gameDataForEditor = {&gameObjects, 0};
+  gameDataForEditor.view = &view;
+  gameDataForEditor.projection = &projection;
 
   // EntityManager::TransformModel(table3,
   // glm::vec3(0.0f, -2.0f, 6.5f),

@@ -160,7 +160,7 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
           editor.GetLanguageDefinition().mName.c_str(), currentFile.c_str());
       editor.Render("ShaderEditor");
     }
-    ImGui::End();
+    ImGui::End(); // Shader Editor
 
     if (ImGui::Begin("Debug counters", nullptr, 0))
     {
@@ -171,12 +171,12 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
                          TicksToMilliseconds(AvgCycles[i]));
       }
     }
-    ImGui::End();
+    ImGui::End(); // Debug Counters
 
     if (ImGui::Begin("Entity Browser", nullptr, 0))
     {
       const int previousSelection = selectedGameObjectIndex;
-      bool selectedFromMouse = false;
+      bool selectedWithMouse = false;
       if (gameData.closestRaycastIndex >= 0)
       {
         if (previousSelection >= 0)
@@ -186,7 +186,7 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
             gameData.gameObjects->at(gameData.closestRaycastIndex),
             FLAG_SELECTED);
         selectedGameObjectIndex = gameData.closestRaycastIndex;
-        selectedFromMouse = true;
+        selectedWithMouse = true;
       }
 
       for (int i = 0; i < gameData.gameObjects->size(); i++)
@@ -196,7 +196,7 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
 
         if (ImGui::Selectable(name.c_str(), selectedGameObjectIndex == i))
         {
-          if (!selectedFromMouse)
+          if (!selectedWithMouse)
           {
             if (previousSelection != i)
             {
@@ -217,9 +217,88 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
         }
       }
     }
-    ImGui::End();
+    ImGui::End(); // EntityBrowser
+
+    if (selectedGameObjectIndex >= 0)
+    {
+      GameObject g = gameData.gameObjects->at(selectedGameObjectIndex);
+      glm::mat4 *matrix = &(EntityManager::gameObjects
+                                .modelMatrices[g.modelIndex][g.instanceIndex]);
+
+      ImGuizmo::BeginFrame();
+      ImGui::Begin("Editor");
+      ImGuizmo::SetID(0);
+      EditTransform(glm::value_ptr(*gameData.view),
+                    glm::value_ptr(*gameData.projection), (float*)matrix);
+      ImGui::End(); // Transform Guizmo
+    }
   }
   ImGui::Render();
+}
+
+void EditorUI::EditTransform(const float *view, const float *projection,
+                             float *matrix)
+{
+  static ImGuizmo::OPERATION mCurrentGizmoOperation(ImGuizmo::ROTATE);
+  static ImGuizmo::MODE mCurrentGizmoMode(ImGuizmo::WORLD);
+  if (ImGui::IsKeyPressed(90))
+    mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+  if (ImGui::IsKeyPressed(69))
+    mCurrentGizmoOperation = ImGuizmo::ROTATE;
+  if (ImGui::IsKeyPressed(82)) // r Key
+    mCurrentGizmoOperation = ImGuizmo::SCALE;
+  if (ImGui::RadioButton("Translate",
+                         mCurrentGizmoOperation == ImGuizmo::TRANSLATE))
+    mCurrentGizmoOperation = ImGuizmo::TRANSLATE;
+  ImGui::SameLine();
+  if (ImGui::RadioButton("Rotate", mCurrentGizmoOperation == ImGuizmo::ROTATE))
+    mCurrentGizmoOperation = ImGuizmo::ROTATE;
+  ImGui::SameLine();
+  if (ImGui::RadioButton("Scale", mCurrentGizmoOperation == ImGuizmo::SCALE))
+    mCurrentGizmoOperation = ImGuizmo::SCALE;
+  float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+  ImGuizmo::DecomposeMatrixToComponents(matrix, matrixTranslation,
+                                        matrixRotation, matrixScale);
+  ImGui::InputFloat3("Tr", matrixTranslation, 3);
+  ImGui::InputFloat3("Rt", matrixRotation, 3);
+  ImGui::InputFloat3("Sc", matrixScale, 3);
+  ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation,
+                                          matrixScale, matrix);
+
+  if (mCurrentGizmoOperation != ImGuizmo::SCALE)
+  {
+    if (ImGui::RadioButton("Local", mCurrentGizmoMode == ImGuizmo::LOCAL))
+      mCurrentGizmoMode = ImGuizmo::LOCAL;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("World", mCurrentGizmoMode == ImGuizmo::WORLD))
+      mCurrentGizmoMode = ImGuizmo::WORLD;
+  }
+  static bool useSnap(false);
+  if (ImGui::IsKeyPressed(83))
+    useSnap = !useSnap;
+  ImGui::Checkbox("", &useSnap);
+  ImGui::SameLine();
+  glm::vec3 snap(1.0f);
+  switch (mCurrentGizmoOperation)
+  {
+  case ImGuizmo::TRANSLATE:
+    // snap = config.mSnapTranslation;
+    ImGui::InputFloat3("Snap", &snap.x);
+    break;
+  case ImGuizmo::ROTATE:
+    // snap = config.mSnapRotation;
+    ImGui::InputFloat("Angle Snap", &snap.x);
+    break;
+  case ImGuizmo::SCALE:
+    // snap = config.mSnapScale;
+    ImGui::InputFloat("Scale Snap", &snap.x);
+    break;
+  }
+  ImGuiIO &io = ImGui::GetIO();
+  ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+  ImGuizmo::Manipulate(view, projection, mCurrentGizmoOperation,
+                       mCurrentGizmoMode, matrix, NULL,
+                       useSnap ? &snap.x : NULL);
 }
 
 void EditorUI::Render()
