@@ -9,12 +9,13 @@ std::vector<BoundingBox> defaultBoundingBoxes;
 std::map<string, unsigned int> EntityManager::loadedModels;
 
 /**
- * @brief Perform a transform of an Axis-Aligned bounding box, keeping it AA.
+ * @brief Perform a transform of an Axis-Aligned bounding box, keeping it
+ * Axis-Aligned.
  *
  * @param bbox the original bounding box of the model. Don't put already
  * transformed bounding boxes in this function
- * @param transform the matrix that holds the transform (translation, rotation
- * and scaling)
+ * @param transform the matrix that holds the model transform (translation,
+ * rotation and scaling)
  */
 static BoundingBox transformBoundingBox(const BoundingBox &bbox,
                                         const glm::mat4 &transform);
@@ -120,12 +121,18 @@ BoundingBox EntityManager::GetAABBWorld(const GameObject &g)
   glm::mat4 model =
       EntityManager::gameObjects.modelMatrices[g.modelIndex][g.instanceIndex];
 
-  glm::vec4 worldMin = model * glm::vec4(box.mMin, 1.0f); // point
-  glm::vec4 worldMax = model * glm::vec4(box.mMax, 1.0f); // point
+  box = transformBoundingBox(box, model);
 
-  BoundingBox result = {glm::vec3(worldMin.x, worldMin.y, worldMin.z),
-                        glm::vec3(worldMax.x, worldMax.y, worldMax.z)};
-  return result;
+  /*
+    glm::vec4 worldMin = model * glm::vec4(box.mMin, 1.0f); // point
+    glm::vec4 worldMax = model * glm::vec4(box.mMax, 1.0f); // point
+
+    BoundingBox result = {glm::vec3(worldMin.x, worldMin.y, worldMin.z),
+                          glm::vec3(worldMax.x, worldMax.y, worldMax.z)};
+
+    return result;
+    */
+  return box;
 }
 
 void EntityManager::TransformModel(GameObject go, glm::vec3 move,
@@ -173,10 +180,8 @@ static BoundingBox transformBoundingBox(const BoundingBox &bbox,
 {
   std::vector<glm::vec3> vertices = EntityManager::GetAABBVertices(bbox);
 
-  glm::vec3 newMin =
-      glm::vec3(1.0f, 1.0f, 1.0f) * std::numeric_limits<float>::max();
-  glm::vec3 newMax =
-      glm::vec3(1.0f, 1.0f, 1.0f) * std::numeric_limits<float>::min();
+  glm::vec3 newMin = glm::vec3(1.0f) * std::numeric_limits<float>::infinity();
+  glm::vec3 newMax = glm::vec3(-1.0f) * std::numeric_limits<float>::infinity();
   for (int i = 0; i < 8; ++i)
   {
     glm::vec4 transformed = transform * glm::vec4(vertices[i], 1.0f);
