@@ -41,6 +41,8 @@ static int targetRefreshRate;
 static double targetFrameTime;
 static int screenWidth = 800;
 static int screenHeight = 600;
+static int windowPos[2] = {0, 0};
+static WindowMode currentWindowMode = WindowMode::WINDOWED_FULLSCREEN;
 
 // mouse controls
 bool firstMouse = true;
@@ -60,35 +62,33 @@ bool uiWindow = false;
 bool uiWindowFocused = true;
 bool editorHasChanges = false;
 
-GLFWwindow *SetWindowMode(WindowMode windowMode)
+void ChangeWindowMode(const WindowMode windowMode, GLFWwindow *window)
 {
-  const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-  GLFWwindow *window = nullptr;
+  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode *mode = glfwGetVideoMode(monitor);
 
   switch (windowMode)
   {
   case WINDOWED_FULLSCREEN:
-    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
-    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
-    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
-    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
-    window = glfwCreateWindow(mode->width, mode->height, "Q",
-                              glfwGetPrimaryMonitor(), nullptr);
+    // save window position for restoring later
+    glfwGetWindowPos(window, &windowPos[0], &windowPos[1]);
+    glfwGetWindowSize(window, &screenWidth, &screenHeight);
+    glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height,
+                         mode->refreshRate);
+    currentWindowMode = windowMode;
     break;
   case WINDOWED:
-    glfwWindowHint(GLFW_DECORATED, true);
-    glfwWindowHint(GLFW_MAXIMIZED, true);
-    glfwWindowHint(GLFW_RESIZABLE, true);
-    window = glfwCreateWindow(mode->width, mode->height, "Q", nullptr, nullptr);
+    glfwSetWindowMonitor(window, nullptr, windowPos[0], windowPos[1],
+                         screenWidth, screenHeight, mode->refreshRate);
+    currentWindowMode = windowMode;
     break;
   default:
-    std::cout << "[ERROR] Unknown window mode: " << windowMode << std::endl;
+    std::cout << "[ERROR] Unknown window mode: " << currentWindowMode
+              << std::endl;
   }
-
-  return window;
 }
 
-GLFWwindow *QCreateWindow()
+GLFWwindow *QCreateWindow(WindowMode currentWindowMode)
 {
   GLFWwindow *window;
   if (!glfwInit())
@@ -97,13 +97,28 @@ GLFWwindow *QCreateWindow()
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+  GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode *mode = glfwGetVideoMode(monitor);
   screenWidth = mode->width;
   screenHeight = mode->height;
-  targetRefreshRate = 2 * mode->refreshRate;
-  targetFrameTime = 1.0 / targetRefreshRate;
 
-  window = SetWindowMode(WindowMode::WINDOWED);
+  switch (currentWindowMode)
+  {
+  case WindowMode::WINDOWED_FULLSCREEN:
+    glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+    glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+    glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+    glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+    window = glfwCreateWindow(mode->width, mode->height, "Q", monitor, nullptr);
+    break;
+  case WindowMode::WINDOWED:
+  default:
+    glfwWindowHint(GLFW_DECORATED, true);
+    glfwWindowHint(GLFW_MAXIMIZED, true);
+    glfwWindowHint(GLFW_RESIZABLE, true);
+    window = glfwCreateWindow(screenWidth, screenHeight, "Q", nullptr, nullptr);
+    break;
+  }
 
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
@@ -182,13 +197,13 @@ int SelectClosestObject(double mousex, double mousey, int width, int height,
     if (closest >= 0)
       gameObjects->at(i).rayCastSelected = true;
   }
-  std::cout << "Raycast closest object: " << closest << std::endl;
   return closest;
 }
 
 int main(int argc, char **argv)
 {
-  GLFWwindow *window = QCreateWindow();
+  currentWindowMode = WindowMode::WINDOWED;
+  GLFWwindow *window = QCreateWindow(currentWindowMode);
   if (!window)
     return -1;
 
@@ -491,6 +506,12 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader,
     }
   }
 
+  if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS &&
+      ProcessKeyTap(GLFW_KEY_ENTER, window))
+  {
+    // TODO: Properly change between fullscreen and windowed mode
+  }
+
   if (!uiWindow || !uiWindowFocused)
   {
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -572,12 +593,15 @@ void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
-  glViewport(0, 0, width, height);
-  screenHeight = height;
-  screenWidth = width;
-  projection = glm::mat4(1);
-  projection =
-      glm::perspective(glm::radians(camera.Zoom),
-                       (float)screenWidth / (float)screenHeight, 0.1f, 100.0f);
-  camera.SetProjectionMatrix(projection);
+  if (width > 0 && height > 0)
+  {
+    glViewport(0, 0, width, height);
+    screenHeight = height;
+    screenWidth = width;
+    projection = glm::mat4(1);
+    projection = glm::perspective(glm::radians(camera.Zoom),
+                                  (float)screenWidth / (float)screenHeight,
+                                  0.1f, 100.0f);
+    camera.SetProjectionMatrix(projection);
+  }
 }
