@@ -10,6 +10,9 @@ class EntityManager
 public:
   // Structure of arrays describing all gameobjects.
   static GameObjects gameObjects;
+  // Structures of arrays describing all instanced objects
+  static GameObjectsInstanced terrain;
+
   // string: the path of the loaded model
   // unsigned int: the model index into the gameObjects SOA
   static std::map<string, unsigned int> loadedModels;
@@ -24,9 +27,23 @@ public:
   /**
    * @brief Import a model from path, give a new ID and store in gameObjects
    * @param path The full or relative path to the model resource file(gltf).
+   * @return GameObject struct containing the instance and model ID as well as
+   * the unique ID for that gameobject
    */
   static GameObject ImportModelFromFile(const char *path,
                                         const char *name = "unnamed");
+  /**
+   * @brief Take a texture directory and import specified amount of tiles
+   * (quads) as terrain. By default placed in non-overlapping way around world
+   * 0,0
+   * @param texturesPath The folder containing the texture images.
+   *
+   * @param numInstances
+   * @param name
+   */
+  static void ImportTerrainTiles(const char *texturesPath,
+                                 unsigned int numInstances,
+                                 const char *name = "unnamed_terrain");
 
   /**
    * @brief Transform one of the models stored in EntityManager::gameObjects

@@ -1,8 +1,11 @@
-#include "SpriteRenderer.h"
+#include "Renderer.h"
 #include <Managers/EntityManager.h>
+
+Renderer::Renderer() {}
 
 Renderer::Renderer(Shader &shader)
 {
+  this->highlightShader = nullptr;
   this->shader = &shader;
   this->initRenderData();
 }
@@ -14,36 +17,17 @@ Renderer::Renderer(Shader &shader, Shader &highlightShader)
   this->initRenderData();
 }
 
-Renderer::~Renderer() { glDeleteVertexArrays(1, &this->quadVAO); }
+Renderer::~Renderer()
+{
+  glDeleteVertexArrays(1, &this->cubeVAO);
+  glDeleteVertexArrays(1, &this->mVAO);
+}
 
 void Renderer::initRenderData()
 {
-  GLuint VAO, VBO; // , EBO;
+  GLuint VBO;
 
-  // set up vertex data (and buffer(s)) and configure vertex attributes
-  // ------------------------------------------------------------------
-
-  /*
-FOR SQUARE USE WITH VBO and glDrawElements
-*/
-  // float vertices[] = {
-  //	//positions			//texture coordinates
-  //	0.5f,  0.5f, 0.0f,  1.0f, 1.0f,// top right
-  //	0.5f, -0.5f, 0.0f,  1.0f, 0.0f,// bottom right
-  //	-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,// bottom left
-  //	-0.5f,  0.5f, 0.0f, 0.0f, 1.0f// top left
-  //};
-
-  // unsigned int indices[] = {  // note that we start from 0!
-  //	0, 1, 3,  // first Triangle
-  //	1, 2, 3   // second Triangle
-  //};
-
-  /*
-FOR CUBE USE DIRECTLY WITH glDrawArrays (no EBO)
-*/
-
-  float vertices[] = {
+  float cubeVertices[] = {
       // positions(3)          // normals(3)         // texture coords(2)
 
       // Back Face
@@ -82,16 +66,17 @@ FOR CUBE USE DIRECTLY WITH glDrawArrays (no EBO)
       1.0f, 0.0f, 0.0f, 1.0f, -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f};
 
   // generate
-  glGenVertexArrays(1, &this->quadVAO);
+  glGenVertexArrays(1, &this->cubeVAO);
   glGenBuffers(1, &VBO);
   // glGenBuffers(1, &EBO);
 
   // bind subsequent array commands to our VAO
-  glBindVertexArray(this->quadVAO);
+  glBindVertexArray(this->cubeVAO);
 
   // send vertices buffer to GPU
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices,
+               GL_STATIC_DRAW);
 
   // send element buffer to GPU
   /*glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -100,17 +85,18 @@ GL_STATIC_DRAW);*/
 
   // specify structure of vertex array data
   // position : layout (location = 0)
+  glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GL_FLOAT),
                         (GLvoid *)0);
-  glEnableVertexAttribArray(0);
+
   // normal : layout (location = 1)
+  glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GL_FLOAT),
                         (GLvoid *)(3 * sizeof(GL_FLOAT)));
-  glEnableVertexAttribArray(1);
   // texture : layout (location = 2)
+  glEnableVertexAttribArray(2);
   glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GL_FLOAT),
                         (GLvoid *)(6 * sizeof(GL_FLOAT)));
-  glEnableVertexAttribArray(2);
 
   // unbind
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -142,7 +128,7 @@ void Renderer::DrawCube(Texture2D &diffuseMap, Texture2D &specularMap,
   this->shader->Use();
   this->shader->SetMatrix4("model", transform);
 
-  glBindVertexArray(this->quadVAO);
+  glBindVertexArray(this->cubeVAO);
   if (isSelected)
   {
     glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -185,7 +171,7 @@ void Renderer::DrawCube(glm::vec3 position, glm::vec3 scale, GLfloat rotation,
   this->shader->Use();
   this->shader->SetMatrix4("model", transform);
 
-  glBindVertexArray(this->quadVAO);
+  glBindVertexArray(this->cubeVAO);
   // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
   glDrawArrays(GL_TRIANGLES, 0, 36);
   glBindVertexArray(0);
@@ -231,7 +217,7 @@ void Renderer::DrawPointLights(glm::vec3 pointLightPositions[],
     this->shader->Use();
     this->shader->SetMatrix4("model", transform);
 
-    glBindVertexArray(this->quadVAO);
+    glBindVertexArray(this->cubeVAO);
     // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
@@ -246,24 +232,22 @@ void Renderer::DrawSprite(Texture2D &texture)
   this->shader->Use();
   this->shader->SetVector4f("ourColor", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-  glBindVertexArray(this->quadVAO);
+  glBindVertexArray(this->cubeVAO);
   // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
   glDrawArrays(GL_TRIANGLES, 0, 36);
   // glBindVertexArray(0);//no need to unbind every time but whaduheck
 }
 
-
-
 void Renderer::DrawGameObjects()
 {
-  glBindVertexArray(VAO);
+  glBindVertexArray(mVAO);
   GameObjects *gos = &(EntityManager::gameObjects);
   unsigned int meshIndex = 0;
   unsigned int textureIndex = 0;
   unsigned int baseIndex = 0;
   unsigned int baseVertex = 0;
 
-  // TODO: Draw instances with glDraw*Instanced
+  // TODO: Draw instances with glDraw*Instanced (?)
   for (unsigned int i = 0; i < EntityManager::gameObjects.numMeshes.size(); i++)
   {
     // Draw each mesh of this object
@@ -308,7 +292,6 @@ void Renderer::DrawGameObjects()
         shader->SetMatrix4("model", gos->modelMatrices[i][instance]);
         if ((gos->flags[i][instance] & FLAG_SELECTED) && highlightShader)
         {
-          // TODO: Draw outline
           glStencilFunc(GL_ALWAYS, 1, 0xFF);
           glStencilMask(0xFF);
           glDrawElementsBaseVertex(GL_TRIANGLES, numIndices, GL_UNSIGNED_INT,
@@ -344,25 +327,25 @@ void Renderer::DrawGameObjects()
   glBindVertexArray(0);
 }
 
-void Renderer::SetupMeshes()
+void Renderer::SetupShaderData()
 {
   unsigned int numVertices = EntityManager::gameObjects.vertices.size();
   unsigned int numIndices = EntityManager::gameObjects.indices.size();
 
-  glGenVertexArrays(1, &VAO);
-  glBindVertexArray(VAO);
+  glGenVertexArrays(1, &mVAO);
+  glBindVertexArray(mVAO);
 
   // bind a buffer and fill it with vertex data for ALL meshes (accross ALL
   // gameobjects)
-  glGenBuffers(1, &VBO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glGenBuffers(1, &mVBO);
+  glBindBuffer(GL_ARRAY_BUFFER, mVBO);
   glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vertex),
                &EntityManager::gameObjects.vertices[0], GL_STATIC_DRAW);
 
   // bind a buffer and fill it with index data for ALL meshes (accross ALL
   // gameobjects)
-  glGenBuffers(1, &EBO);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glGenBuffers(1, &mEBO);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mEBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(uint32_t),
                &EntityManager::gameObjects.indices[0], GL_STATIC_DRAW);
 

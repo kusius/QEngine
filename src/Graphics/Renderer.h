@@ -27,7 +27,7 @@
 class Renderer
 {
 public:
-  // constructor inits shaders/shapes
+  // constructor inits shaders
   Renderer();
   Renderer(Shader &shader);
   Renderer(Shader &shader, Shader &highlightShader);
@@ -47,23 +47,27 @@ public:
                        glm::vec3 color = glm::vec3(1.0f));
   void DrawSprite(Texture2D &texture);
 
-
   /**
    * @brief Draws the EntityManager::gameObjects SOA.
    * @see EntityManager
-   *
    */
   void DrawGameObjects();
-  void SetupMeshes();
 
-private:
+  /**
+   * @brief Prepare the vertex arrays and shader uniforms for rendering
+   * the SOA defined in @see EntityManager.
+   */
+  void SetupShaderData();
+
+protected:
   // Render state
   Shader *shader;
   Shader *highlightShader;
-  GLuint quadVAO;
-  GLuint VAO, EBO, VBO;
+
+private:
+  GLuint cubeVAO;
+  GLuint mVAO, mEBO, mVBO;
   // Inits and configures the quad's buffer and vertex attributes
   void initRenderData();
 };
-
 #endif

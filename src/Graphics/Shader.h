@@ -7,6 +7,21 @@
 
 #include <string>
 
+struct Vertex
+{
+  glm::vec3 Position;
+  glm::vec3 Normal;
+  glm::vec2 TexCoords;
+  glm::vec3 Tangent;
+};
+
+struct Texture
+{
+  unsigned int id;
+  std::string type;
+  std::string path;
+};
+
 // General purpose shader object. Compiles from file, generates
 // compile/link-time error messages and hosts several utility
 // functions for easy management.

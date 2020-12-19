@@ -115,6 +115,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene)
 
     vertices.push_back(vertex);
   }
+
   // Process indices
   for (unsigned int i = 0; i < mesh->mNumFaces; i++)
   {
@@ -188,7 +189,6 @@ unsigned int Model::loadTextureFromFile(const char *file,
   glGenTextures(1, &id);
 
   int width, height, bpp;
-  string sFile = string(file);
   string path = directory + '/' + file;
   cout << "LOAD::TEXTURE::INFO: Loading texture " << path << endl;
   unsigned char *image =

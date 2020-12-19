@@ -1,9 +1,13 @@
+#include <Platform/Win64Platform.h>
+
 #include "EntityManager.h"
+#include <ResourceManager.h>
 #include <Graphics/Model.h>
 
 using namespace std;
 
 GameObjects EntityManager::gameObjects;
+GameObjectsInstanced EntityManager::terrain;
 unsigned int EntityManager::nextInstanceID;
 std::vector<BoundingBox> defaultBoundingBoxes;
 std::map<string, unsigned int> EntityManager::loadedModels;
@@ -24,6 +28,29 @@ void EntityManager::Init()
 {
   nextInstanceID = 0;
   loadedModels.clear();
+}
+
+void EntityManager::ImportTerrainTiles(const char *texturesPath,
+                                       unsigned int numInstances,
+                                       const char *name)
+{
+  GameObjectsInstanced *gos = &(EntityManager::terrain);
+
+  std::vector<Texture> textures = ResourceManager::LoadMaterialGLTF(
+      std::string(texturesPath) + "/minimal.gltf");
+
+  gos->textures.insert(gos->textures.begin(), textures.begin(), textures.end());
+  for (unsigned int i = 0; i < numInstances; i++)
+  {
+    gos->modelMatrices.push_back(glm::mat4(1.0f));
+    gos->positions.push_back(glm::vec3(0.0f));
+    gos->scales.push_back(glm::vec3(1.0f));
+    gos->angles.push_back(glm::vec3(0.0f));
+    gos->flags.push_back(FLAG_NONE);
+  }
+
+  // Define numInstances positions, scales, angles,
+  // modelMatrices and flags
 }
 
 GameObject EntityManager::ImportModelFromFile(const char *path,
@@ -47,7 +74,7 @@ GameObject EntityManager::ImportModelFromFile(const char *path,
     gos->positions[it->second].push_back(glm::vec3(0.0f));
     gos->angles[it->second].push_back(glm::vec3(0.0f));
     gos->scales[it->second].push_back(glm::vec3(1.0f));
-    gos->flags[it->second].push_back(0x0000);
+    gos->flags[it->second].push_back(FLAG_NONE);
   }
   else
   {

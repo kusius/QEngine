@@ -6,7 +6,8 @@ set(GRAPHICS_SOURCE_FILES
 Graphics/Mesh.cpp
 Graphics/Model.cpp
 Graphics/Shader.cpp
-Graphics/SpriteRenderer.cpp
+Graphics/Renderer.cpp
+Graphics/InstancedRenderer.cpp
 Graphics/Texture.cpp
 )
 

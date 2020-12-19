@@ -11,6 +11,7 @@
 
 #define MAX_GAME_OBJECTS 512
 
+#define FLAG_NONE (0x0000)
 #define FLAG_SELECTED (0x0001)
 
 // Exposes data to the game
@@ -28,7 +29,12 @@ struct Lights
   glm::vec3 pointLightPositions[MAX_POINT_LIGHTS];
 };
 
-// Used by renderer
+struct Terrain
+{
+  glm::vec3 position;
+};
+
+// SOA used to store GameObjects
 struct GameObjects
 {
   std::vector<uint32_t> numInstances;
@@ -53,7 +59,15 @@ struct GameObjects
 
 struct GameObjectsInstanced
 {
-  // TODO
+  std::vector<glm::mat4> modelMatrices;
+  std::vector<glm::vec3> positions;
+  std::vector<glm::vec3> scales;
+  std::vector<glm::vec3> angles;
+  std::vector<uint16_t> flags;
+
+  std::vector<Texture> textures; // one set of texture maps for all instances
+  uint32_t
+      numTextures; // number of texture types(maps) stored in textures array
 };
 
 #endif // GAME_OBJECTS_H
