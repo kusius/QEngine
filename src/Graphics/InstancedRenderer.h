@@ -15,7 +15,8 @@ public:
    * @param objects An intanced SOA that contains entities we want to draw
    */
   InstancedRenderer(Shader &shader, GameObjectsInstanced *objects);
-  void DrawGround();
+  void DrawTerrain();
+  void SetupShaderData();
 
 private:
   void initRenderData();

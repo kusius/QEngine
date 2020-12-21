@@ -249,12 +249,6 @@ int main(int argc, char **argv)
 
   ShaderStaticData(shader, lightShader);
 
-  Renderer *renderer, *lightRenderer;
-  renderer = new Renderer(*shader, *highlightShader);
-  lightRenderer = new Renderer(*lightShader);
-  InstancedRenderer *instancedRenderer =
-      new InstancedRenderer(*instancedShader, nullptr);
-
   EntityManager::Init();
   GameObject table1 = EntityManager::ImportModelFromFile(
       "Assets/models/table/scene.gltf", "Table");
@@ -285,6 +279,12 @@ int main(int argc, char **argv)
   gameDataForEditor.view = &view;
   gameDataForEditor.projection = &projection;
   gameDataForEditor.bRenderBoundingBoxes = false;
+
+  Renderer *renderer, *lightRenderer;
+  renderer = new Renderer(*shader, *highlightShader);
+  lightRenderer = new Renderer(*lightShader);
+  InstancedRenderer *terrainRenderer =
+      new InstancedRenderer(*instancedShader, &EntityManager::terrain);
 
   // EntityManager::TransformModel(table3,
   // glm::vec3(0.0f, -2.0f, 6.5f),
@@ -362,7 +362,12 @@ int main(int argc, char **argv)
     highlightShader->SetMatrix4("view", view);
     highlightShader->SetMatrix4("projection", projection);
 
+    instancedShader->Use();
+    instancedShader->SetMatrix4("view", view);
+    instancedShader->SetMatrix4("projection", projection);
+
     renderer->DrawGameObjects();
+    terrainRenderer->DrawTerrain();
 
     lightShader->Use();
     lightShader->SetMatrix4("view", view);

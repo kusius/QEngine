@@ -1,18 +1,17 @@
 #include "InstancedRenderer.h"
+#include <Managers/EntityManager.h>
 
 InstancedRenderer::InstancedRenderer(Shader &shader,
                                      GameObjectsInstanced *objects)
 {
-  this->gameObjectsInstanced = objects;
   this->shader = &shader;
-  this->initRenderData();
+  this->gameObjectsInstanced = objects;
+  if (objects->modelMatrices.size() > 0)
+    this->SetupShaderData();
 }
 
-void InstancedRenderer::initRenderData()
+void InstancedRenderer::SetupShaderData()
 {
-  if (this->gameObjectsInstanced == nullptr)
-    return;
-
   unsigned int VBO, matrixBO;
   float quadVertices[] = {
       //	//positions			//texture coordinates
@@ -54,14 +53,17 @@ void InstancedRenderer::initRenderData()
 
   glEnableVertexAttribArray(4);
   glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void *)(0));
+
   glEnableVertexAttribArray(5);
   glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
                         (void *)(1 * vec4Size));
+
   glEnableVertexAttribArray(6);
-  glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
+  glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
                         (void *)(2 * vec4Size));
+
   glEnableVertexAttribArray(7);
-  glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
+  glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
                         (void *)(3 * vec4Size));
 
   // specify the attribute divisor to update the vertex attribute once each
@@ -74,16 +76,18 @@ void InstancedRenderer::initRenderData()
   glBindVertexArray(0);
 }
 
-void InstancedRenderer::DrawGround()
+void InstancedRenderer::DrawTerrain()
 {
   unsigned int quadIndices[] = {
       0, 1, 3, // first Triangle
       1, 2, 3  // second Triangle
   };
-  glm::mat4 transform = glm::mat4(1.0f);
   this->shader->Use();
-  this->shader->SetMatrix4("model", transform);
+  glm::mat4 transform = glm::mat4(1.0f);
+  unsigned int instanceCount = EntityManager::terrain.modelMatrices.size();
   glBindVertexArray(this->quadVAO);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, &quadIndices);
+  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, &quadIndices,
+                          instanceCount);
+
   glBindVertexArray(0);
 }
