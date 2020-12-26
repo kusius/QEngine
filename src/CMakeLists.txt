@@ -46,9 +46,9 @@ target_link_libraries(Q
                        debug assimp-vc142-mtd optimized assimp-vc142-mt)
 
 
-
 #### Copy Assets ####
 add_custom_target(copy_assets
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_LIST_DIR}/copy-assets.cmake
 )
+
 add_dependencies(Q copy_assets)

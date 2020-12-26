@@ -10,7 +10,7 @@
             },
             "label": "nmake Debug",
             "type": "shell",
-            "command": "nmake",
+            "command": "nmake /NOLOGO",
             "options": {
                 "cwd": "${workspaceFolder}/build/debug/"
             },
@@ -19,7 +19,7 @@
         {
             "label": "nmake Release",
             "type": "shell",
-            "command": "nmake",
+            "command": "nmake /NOLOGO",
             "options": {
                 "cwd": "${workspaceFolder}/build/release/"
             },
