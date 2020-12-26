@@ -47,7 +47,8 @@ target_link_libraries(Q
 
 
 
-#### Copy Assets folder ####
-add_custom_target(copy_resources ALL COMMAND ${CMAKE_COMMAND} -E copy_directory
-  "${PROJECT_SOURCE_DIR}/Assets" ${CMAKE_BINARY_DIR}/Assets
+#### Copy Assets ####
+add_custom_target(copy_assets
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_LIST_DIR}/copy-assets.cmake
 )
+add_dependencies(Q copy_assets)
