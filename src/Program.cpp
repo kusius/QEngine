@@ -1,7 +1,6 @@
 #include <Platform/Win64Platform.h>
 #include <Metrics/CountDebugRegions.h>
 #include <Graphics/Renderer.h>
-#include <Graphics/InstancedRenderer.h>
 #include <Managers/EntityManager.h>
 #include <Camera.h>
 #include <ResourceManager.h>
@@ -122,7 +121,7 @@ GLFWwindow *QCreateWindow(WindowMode currentWindowMode)
   }
 
   glfwMakeContextCurrent(window);
-  glfwSwapInterval(1);
+  glfwSwapInterval(0);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
   {
@@ -243,9 +242,9 @@ int main(int argc, char **argv)
   Shader *highlightShader = ResourceManager::LoadShader(
       "Assets/Shaders/gameobject.vert", "Assets/Shaders/diffusecolor.frag",
       nullptr, "highlight");
-  Shader *instancedShader = ResourceManager::LoadShader(
-      "Assets/Shaders/terrain.vert", "Assets/Shaders/diffusecolor.frag",
-      nullptr, "instanced");
+  Shader *terrainShader = ResourceManager::LoadShader(
+      "Assets/Shaders/terrain.vert", "Assets/Shaders/gameobject.frag", nullptr,
+      "instanced");
 
   ShaderStaticData(shader, lightShader);
 
@@ -258,6 +257,9 @@ int main(int argc, char **argv)
       "Assets/models/table/scene.gltf", "Table");
   GameObject table3 = EntityManager::ImportModelFromFile(
       "Assets/models/table/scene.gltf", "Table");
+  GameObject tile1 = EntityManager::ImportModelFromFile(
+      "Assets/Terrain/cobblestone_floor/cobblestone_floor.gltf", "Tile");
+
   EntityManager::TransformModel(table1, glm::vec3(0.0f, -2.0f, 2.5f),
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
@@ -268,13 +270,14 @@ int main(int argc, char **argv)
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
   EntityManager::TransformModel(sofa1, glm::vec3(0.0f, -2.0f, -1.5f));
-
-  EntityManager::ImportTerrainTiles("Assets/Terrain/cobblestone_floor", 4);
+  EntityManager::TransformModel(tile1, glm::vec3(1.0f, -2.0f, 2.0f),
+                                glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.01f));
 
   gameObjects.push_back(table1);
   gameObjects.push_back(table2);
   gameObjects.push_back(table3);
   gameObjects.push_back(sofa1);
+  gameObjects.push_back(tile1);
   gameDataForEditor = {&gameObjects, 0};
   gameDataForEditor.view = &view;
   gameDataForEditor.projection = &projection;
@@ -283,8 +286,6 @@ int main(int argc, char **argv)
   Renderer *renderer, *lightRenderer;
   renderer = new Renderer(*shader, *highlightShader);
   lightRenderer = new Renderer(*lightShader);
-  InstancedRenderer *terrainRenderer =
-      new InstancedRenderer(*instancedShader, &EntityManager::terrain);
 
   // EntityManager::TransformModel(table3,
   // glm::vec3(0.0f, -2.0f, 6.5f),
@@ -362,12 +363,11 @@ int main(int argc, char **argv)
     highlightShader->SetMatrix4("view", view);
     highlightShader->SetMatrix4("projection", projection);
 
-    instancedShader->Use();
-    instancedShader->SetMatrix4("view", view);
-    instancedShader->SetMatrix4("projection", projection);
+    terrainShader->Use();
+    terrainShader->SetMatrix4("view", view);
+    terrainShader->SetMatrix4("projection", projection);
 
     renderer->DrawGameObjects();
-    terrainRenderer->DrawTerrain();
 
     lightShader->Use();
     lightShader->SetMatrix4("view", view);

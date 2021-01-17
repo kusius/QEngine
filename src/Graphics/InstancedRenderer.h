@@ -14,14 +14,20 @@ public:
    * rendering
    * @param objects An intanced SOA that contains entities we want to draw
    */
-  InstancedRenderer(Shader &shader, GameObjectsInstanced *objects);
-  void DrawTerrain();
+  InstancedRenderer(Shader &shader, GameObjectsInstanced &objects);
+  /**
+   * @brief Draws all instances defined in the GameObjectsInstanced SOA
+   * as quads
+   *
+   */
+  void DrawAsQuads();
+  void Draw();
   void SetupShaderData();
 
 private:
   void initRenderData();
   GLuint quadVAO;
-  GameObjectsInstanced *gameObjectsInstanced;
+  GameObjectsInstanced &gameObjectsInstanced;
 };
 
 #endif // INSTANCED_RENDERER_H

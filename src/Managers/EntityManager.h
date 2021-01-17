@@ -4,6 +4,7 @@
 #include <Objects/GameObjects.h>
 #include <map>
 #include <string>
+#include <vector>
 
 class EntityManager
 {
@@ -16,8 +17,6 @@ public:
   // string: the path of the loaded model
   // unsigned int: the model index into the gameObjects SOA
   static std::map<string, unsigned int> loadedModels;
-  // The total objects stored in the gameObjects array
-  static unsigned int nextInstanceID;
 
   static std::vector<glm::vec3> GetAABBVertices(const BoundingBox &bbox);
 
@@ -38,12 +37,12 @@ public:
    * 0,0
    * @param texturesPath The folder containing the texture images.
    *
-   * @param numInstances
-   * @param name
+   * @param numInstances How many instances should be created
+   * @param name A friendly name for this tile set
    */
-  static void ImportTerrainTiles(const char *texturesPath,
-                                 unsigned int numInstances,
-                                 const char *name = "unnamed_terrain");
+  static std::vector<GameObject>
+  ImportTerrainQuadSet(const char *texturesPath, unsigned int numInstances,
+                       const char *name = "unnamed_terrain");
 
   /**
    * @brief Transform one of the models stored in EntityManager::gameObjects
@@ -59,6 +58,10 @@ public:
   static void TransformModel(GameObject go, glm::vec3 position = glm::vec3(0.0),
                              glm::vec3 rotation = glm::vec3(0.0),
                              glm::vec3 scale = glm::vec3(1.0));
+
+  static void EntityManager::TransformTerrainTile(GameObject go, glm::vec3 move,
+                                                  glm::vec3 rotation,
+                                                  glm::vec3 scale);
   // Translate a GameObject
   static void Translate(unsigned int id, glm::vec3 translation);
   // Rotate a GameObject
@@ -76,5 +79,7 @@ public:
 
 private:
   EntityManager(){};
+  // The total objects stored in the gameObjects array
+  static unsigned int nextInstanceID;
 };
 #endif // ENTITY_MANAGER_H

@@ -255,33 +255,8 @@ void Renderer::DrawGameObjects()
 
     for (unsigned int j = 0; j < numMeshes; j++)
     {
-      unsigned int diffuseNr = 1;
-      unsigned int specularNr = 1;
-      unsigned int emissionNr = 1;
-      unsigned int normalNr = 1;
       // Bind the appropriate textures for this mesh
-
-      for (unsigned int k = 0; k < gos->numTextures[meshIndex]; k++)
-      {
-        glActiveTexture(GL_TEXTURE0 + k);
-        string number;
-        string name = gos->textures[textureIndex].type;
-        if (name == "texture_diffuse")
-          number = std::to_string(diffuseNr++);
-        else if (name == "texture_specular")
-          number = std::to_string(specularNr++);
-        else if (name == "texture_emission")
-          number = std::to_string(emissionNr++);
-        else if (name == "texture_normal")
-          number = std::to_string(normalNr++);
-
-        shader->Use();
-        shader->SetInteger(("material." + name + number).c_str(), k);
-        shader->SetFloat("material.shininess", 32.0f);
-        glBindTexture(GL_TEXTURE_2D, gos->textures[textureIndex].id);
-        textureIndex++;
-      }
-      glActiveTexture(GL_TEXTURE0);
+      bindTextures(gos->numTextures[meshIndex], gos->textures, textureIndex);
 
       unsigned int numIndices = gos->numIndices[meshIndex];
 
@@ -325,6 +300,38 @@ void Renderer::DrawGameObjects()
     }
   }
   glBindVertexArray(0);
+}
+
+inline void Renderer::bindTextures(unsigned int numTextures,
+                                   const std::vector<Texture> &textures,
+                                   unsigned int &textureIndex)
+{
+  unsigned int diffuseNr = 1;
+  unsigned int specularNr = 1;
+  unsigned int emissionNr = 1;
+  unsigned int normalNr = 1;
+
+  for (unsigned int k = 0; k < numTextures; k++)
+  {
+    glActiveTexture(GL_TEXTURE0 + k);
+    string number;
+    string name = textures[textureIndex].type;
+    if (name == "texture_diffuse")
+      number = std::to_string(diffuseNr++);
+    else if (name == "texture_specular")
+      number = std::to_string(specularNr++);
+    else if (name == "texture_emission")
+      number = std::to_string(emissionNr++);
+    else if (name == "texture_normal")
+      number = std::to_string(normalNr++);
+
+    shader->Use();
+    shader->SetInteger(("material." + name + number).c_str(), k);
+    shader->SetFloat("material.shininess", 32.0f);
+    glBindTexture(GL_TEXTURE_2D, textures[textureIndex].id);
+    textureIndex++;
+  }
+  glActiveTexture(GL_TEXTURE0);
 }
 
 void Renderer::SetupShaderData()

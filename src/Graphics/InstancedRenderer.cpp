@@ -2,49 +2,59 @@
 #include <Managers/EntityManager.h>
 
 InstancedRenderer::InstancedRenderer(Shader &shader,
-                                     GameObjectsInstanced *objects)
+                                     GameObjectsInstanced &objects)
+    : gameObjectsInstanced(objects)
 {
   this->shader = &shader;
-  this->gameObjectsInstanced = objects;
-  if (objects->modelMatrices.size() > 0)
+  if (gameObjectsInstanced.modelMatrices.size() > 0)
     this->SetupShaderData();
 }
 
 void InstancedRenderer::SetupShaderData()
 {
-  unsigned int VBO, matrixBO;
-  float quadVertices[] = {
-      //	//positions			//texture coordinates
-      0.5f,  0.5f,  0.0f, 1.0f, 1.0f, // top right
-      0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, // bottom right
-      -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
-      -0.5f, 0.5f,  0.0f, 0.0f, 1.0f  // top left
-  };
+  unsigned int numVertices = this->gameObjectsInstanced.vertices.size();
+  unsigned int numIndices = this->gameObjectsInstanced.indices.size();
+
+  unsigned int VBO, matrixBO, EBO;
 
   glGenVertexArrays(1, &this->quadVAO);
+  glBindVertexArray(this->quadVAO);
+
   glGenBuffers(1, &VBO);
   glGenBuffers(1, &matrixBO);
+  glGenBuffers(1, &EBO);
 
-  glBindVertexArray(this->quadVAO);
   // send vertices
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, numVertices * sizeof(Vertex),
+               &this->gameObjectsInstanced.vertices[0], GL_STATIC_DRAW);
 
-  // layout (location = 0) positions
+  // send indices
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, numIndices * sizeof(uint32_t),
+               &this->gameObjectsInstanced.indices[0], GL_STATIC_DRAW);
+
+  // vertex positions
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT),
-                        (void *)0);
-  // layout (location = 2) texture coordinates
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)0);
+  // vertex normals
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void *)offsetof(Vertex, Normal));
+  // texture ccordinates
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GL_FLOAT),
-                        (void *)(3 * sizeof(GL_FLOAT)));
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void *)offsetof(Vertex, TexCoords));
+  // tangent space
+  glEnableVertexAttribArray(3);
+  glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                        (void *)offsetof(Vertex, Tangent));
 
-  // send modelmatrices
-  size_t numInstances = this->gameObjectsInstanced->modelMatrices.size();
+  // model matrices
+  size_t numInstances = this->gameObjectsInstanced.modelMatrices.size();
   glBindBuffer(GL_ARRAY_BUFFER, matrixBO);
   glBufferData(GL_ARRAY_BUFFER, numInstances * sizeof(glm::mat4),
-               &this->gameObjectsInstanced->modelMatrices[0], GL_STATIC_DRAW);
+               &this->gameObjectsInstanced.modelMatrices[0], GL_STATIC_DRAW);
 
   // layout (location = 4) instanced model matrices
   // the columns of the model are in locations 4,5,6,7 (because OpenGL accepts
@@ -76,12 +86,16 @@ void InstancedRenderer::SetupShaderData()
   glBindVertexArray(0);
 }
 
-void InstancedRenderer::DrawTerrain()
+void InstancedRenderer::DrawAsQuads()
 {
   unsigned int quadIndices[] = {
       0, 1, 3, // first Triangle
       1, 2, 3  // second Triangle
   };
+  unsigned int textureIndex = 0;
+  bindTextures(gameObjectsInstanced.numTextures, gameObjectsInstanced.textures,
+               textureIndex);
+
   this->shader->Use();
   glm::mat4 transform = glm::mat4(1.0f);
   unsigned int instanceCount = EntityManager::terrain.modelMatrices.size();
@@ -89,5 +103,22 @@ void InstancedRenderer::DrawTerrain()
   glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, &quadIndices,
                           instanceCount);
 
+  glBindVertexArray(0);
+}
+
+void InstancedRenderer::Draw()
+{
+  unsigned int textureIndex = 0;
+  bindTextures(this->gameObjectsInstanced.numTextures,
+               this->gameObjectsInstanced.textures, textureIndex);
+
+  this->shader->Use();
+  glm::mat4 transform = glm::mat4(1.0f);
+  unsigned int instanceCount = this->gameObjectsInstanced.modelMatrices.size();
+
+  glBindVertexArray(this->quadVAO);
+  glDrawElementsInstanced(
+      GL_TRIANGLES, this->gameObjectsInstanced.indices.size(), GL_UNSIGNED_INT,
+      (void *)this->gameObjectsInstanced.indices[0], instanceCount);
   glBindVertexArray(0);
 }

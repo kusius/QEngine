@@ -63,6 +63,19 @@ protected:
   // Render state
   Shader *shader;
   Shader *highlightShader;
+  /**
+   * @brief Bind the texture uniforms needed for our gameObject.frag fragment
+   * shader
+   *
+   * @param numTextures how many textures to bind to our shader
+   * @param textures the array from which to draw the Texture objects
+   * @param textureIndex (in/out) an index to use for the array (we increment it
+   * inside this function). This is in case the calling code has a running index
+   * for the textures array.
+   */
+  inline void bindTextures(unsigned int numTextures,
+                           const std::vector<Texture> &textures,
+                           unsigned int &textureIndex);
 
 private:
   GLuint cubeVAO;
