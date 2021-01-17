@@ -68,7 +68,9 @@
         "thread": "cpp",
         "atomic": "cpp",
         "compare": "cpp",
-        "*.rh": "cpp"
+        "*.rh": "cpp",
+        "filesystem": "cpp",
+        "stack": "cpp"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "editor.renderIndentGuides": false,

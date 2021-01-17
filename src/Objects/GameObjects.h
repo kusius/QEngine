@@ -11,13 +11,15 @@
 
 #define MAX_GAME_OBJECTS 512
 
+#define FLAG_NONE (0x0000)
 #define FLAG_SELECTED (0x0001)
 
 // Exposes data to the game
 struct GameObject
 {
-  std::string name;
-  std::string path;
+  std::string name; // friendly name given on creation
+  std::string
+      path; // the path of the descriptor file for the object (.gltf etc.)
   unsigned int id, modelIndex, instanceIndex;
   bool rayCastSelected;
 };
@@ -28,7 +30,12 @@ struct Lights
   glm::vec3 pointLightPositions[MAX_POINT_LIGHTS];
 };
 
-// Used by renderer
+struct Terrain
+{
+  glm::vec3 position;
+};
+
+// SOA used to store GameObjects
 struct GameObjects
 {
   std::vector<uint32_t> numInstances;
@@ -43,7 +50,7 @@ struct GameObjects
   std::vector<Vertex> vertices;
   std::vector<Texture> textures;
 
-  // modelMatricec stores numInstances matrices for that gameObject
+  // modelMatrices stores numInstances matrices for that gameObject
   std::vector<std::vector<glm::mat4>> modelMatrices;
   std::vector<std::vector<glm::vec3>> positions;
   std::vector<std::vector<glm::vec3>> scales;
@@ -53,7 +60,18 @@ struct GameObjects
 
 struct GameObjectsInstanced
 {
-  // TODO
+  std::vector<glm::mat4> modelMatrices;
+  std::vector<glm::vec3> positions;
+  std::vector<glm::vec3> scales;
+  std::vector<glm::vec3> angles;
+
+  std::vector<Texture> textures; // one set of texture maps for all instances
+  std::vector<Vertex> vertices;
+  std::vector<uint32_t> indices;
+
+  std::vector<uint16_t> flags;
+  uint32_t
+      numTextures; // number of texture types(maps) stored in textures array
 };
 
 #endif // GAME_OBJECTS_H

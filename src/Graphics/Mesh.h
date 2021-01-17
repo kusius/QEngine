@@ -12,21 +12,6 @@
 #include <vector>
 using namespace std;
 
-struct Vertex
-{
-  glm::vec3 Position;
-  glm::vec3 Normal;
-  glm::vec2 TexCoords;
-  glm::vec3 Tangent;
-};
-
-struct Texture
-{
-  unsigned int id;
-  string type;
-  string path;
-};
-
 struct BoundingBox
 {
   glm::vec3 mMin;

@@ -1,6 +1,6 @@
 #include <Platform/Win64Platform.h>
 #include <Metrics/CountDebugRegions.h>
-#include <Graphics/SpriteRenderer.h>
+#include <Graphics/Renderer.h>
 #include <Managers/EntityManager.h>
 #include <Camera.h>
 #include <ResourceManager.h>
@@ -195,7 +195,7 @@ int SelectClosestObject(double mousex, double mousey, int width, int height,
 
     // If we found any, mark it
     if (closest >= 0)
-      gameObjects->at(i).rayCastSelected = true;
+      gameObjects->at(closest).rayCastSelected = true;
   }
   return closest;
 }
@@ -233,25 +233,17 @@ int main(int argc, char **argv)
   // Make our shaders (read, compile, link)
   ResourceManager::LoadTexture("Assets/UI/Textures/loading_screen.jpg", false,
                                "loading_screen");
-  ResourceManager::LoadShader("Assets/Shaders/shader.vert",
-                              "Assets/Shaders/lightingshader.frag", nullptr,
-                              "shader");
-  ResourceManager::LoadShader("Assets/Shaders/lampshader.vert",
-                              "Assets/Shaders/lampshader.frag", nullptr,
-                              "lampshader");
-  ResourceManager::LoadShader("Assets/Shaders/shader.vert",
-                              "Assets/Shaders/diffusecolor.frag", nullptr,
-                              "highlight");
-
-  Shader *shader = ResourceManager::GetShader("shader");
-  Shader *lightShader = ResourceManager::GetShader("lampshader");
-  Shader *highlightShader = ResourceManager::GetShader("highlight");
+  Shader *shader = ResourceManager::LoadShader("Assets/Shaders/gameobject.vert",
+                                               "Assets/Shaders/gameobject.frag",
+                                               nullptr, "shader");
+  Shader *lightShader = ResourceManager::LoadShader(
+      "Assets/Shaders/lampshader.vert", "Assets/Shaders/lampshader.frag",
+      nullptr, "lampshader");
+  Shader *highlightShader = ResourceManager::LoadShader(
+      "Assets/Shaders/gameobject.vert", "Assets/Shaders/diffusecolor.frag",
+      nullptr, "highlight");
 
   ShaderStaticData(shader, lightShader);
-
-  Renderer *renderer, *lightRenderer;
-  renderer = new Renderer(*shader, *highlightShader);
-  lightRenderer = new Renderer(*lightShader);
 
   EntityManager::Init();
   GameObject table1 = EntityManager::ImportModelFromFile(
@@ -262,6 +254,9 @@ int main(int argc, char **argv)
       "Assets/models/table/scene.gltf", "Table");
   GameObject table3 = EntityManager::ImportModelFromFile(
       "Assets/models/table/scene.gltf", "Table");
+  GameObject tile1 = EntityManager::ImportModelFromFile(
+      "Assets/Terrain/cobblestone_floor/cobblestone_floor.gltf", "Tile");
+
   EntityManager::TransformModel(table1, glm::vec3(0.0f, -2.0f, 2.5f),
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
@@ -272,15 +267,22 @@ int main(int argc, char **argv)
                                 glm::vec3(-90.0f, 0.0f, 90.0f),
                                 glm::vec3(0.1f));
   EntityManager::TransformModel(sofa1, glm::vec3(0.0f, -2.0f, -1.5f));
+  EntityManager::TransformModel(tile1, glm::vec3(1.0f, -2.0f, 2.0f),
+                                glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.01f));
 
   gameObjects.push_back(table1);
   gameObjects.push_back(table2);
   gameObjects.push_back(table3);
   gameObjects.push_back(sofa1);
+  gameObjects.push_back(tile1);
   gameDataForEditor = {&gameObjects, 0};
   gameDataForEditor.view = &view;
   gameDataForEditor.projection = &projection;
   gameDataForEditor.bRenderBoundingBoxes = false;
+
+  Renderer *renderer, *lightRenderer;
+  renderer = new Renderer(*shader, *highlightShader);
+  lightRenderer = new Renderer(*lightShader);
 
   // EntityManager::TransformModel(table3,
   // glm::vec3(0.0f, -2.0f, 6.5f),
@@ -288,7 +290,7 @@ int main(int argc, char **argv)
   // glm::vec3(0.1f));
 
   // renderer prepares data based on current gameObjects SOA
-  renderer->SetupMeshes();
+  renderer->SetupShaderData();
 
   double thisTime = 0.0;
   double deltaTime = 0.0;
@@ -297,7 +299,7 @@ int main(int argc, char **argv)
   float rotateSpeed = 10.0f;
 
   EditorUI::SetupContext(window);
-  EditorUI::ShaderEditorOpenFile("Assets/Shaders/lightingshader.frag");
+  EditorUI::ShaderEditorOpenFile("Assets/Shaders/gameobject.frag");
 
   InitPlatform();
   InitDebug();
@@ -492,7 +494,6 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader,
 {
   if (ProcessKeyTap(GLFW_KEY_ESCAPE, window))
   {
-    // glfwSetWindowShouldClose(window, true);
     uiWindow = !uiWindow;
     if (uiWindow)
     {
