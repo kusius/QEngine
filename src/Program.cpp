@@ -121,7 +121,7 @@ GLFWwindow *QCreateWindow(WindowMode currentWindowMode)
   }
 
   glfwMakeContextCurrent(window);
-  glfwSwapInterval(0);
+  glfwSwapInterval(1);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
   {
@@ -242,9 +242,6 @@ int main(int argc, char **argv)
   Shader *highlightShader = ResourceManager::LoadShader(
       "Assets/Shaders/gameobject.vert", "Assets/Shaders/diffusecolor.frag",
       nullptr, "highlight");
-  Shader *terrainShader = ResourceManager::LoadShader(
-      "Assets/Shaders/terrain.vert", "Assets/Shaders/gameobject.frag", nullptr,
-      "instanced");
 
   ShaderStaticData(shader, lightShader);
 
@@ -362,10 +359,6 @@ int main(int argc, char **argv)
     highlightShader->Use();
     highlightShader->SetMatrix4("view", view);
     highlightShader->SetMatrix4("projection", projection);
-
-    terrainShader->Use();
-    terrainShader->SetMatrix4("view", view);
-    terrainShader->SetMatrix4("projection", projection);
 
     renderer->DrawGameObjects();
 

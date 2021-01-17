@@ -176,46 +176,50 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
     if (ImGui::Begin("Entity Browser", nullptr, 0))
     {
       const int previousSelection = selectedGameObjectIndex;
-      bool selectedWithMouse = false;
-      if (gameData.closestRaycastIndex >= 0)
-      {
-        if (previousSelection >= 0)
-          EntityManager::UnsetFlags(gameData.gameObjects->at(previousSelection),
-                                    FLAG_SELECTED);
-        EntityManager::SetFlags(
-            gameData.gameObjects->at(gameData.closestRaycastIndex),
-            FLAG_SELECTED);
-        selectedGameObjectIndex = gameData.closestRaycastIndex;
-        selectedWithMouse = true;
-      }
-
+      bool hasListSelection = false;
       for (int i = 0; i < gameData.gameObjects->size(); i++)
       {
         string name = string("(" + to_string(gameData.gameObjects->at(i).id) +
                              ") " + gameData.gameObjects->at(i).name);
-
+        // See if there is a selection from the selectable list
+        // if same item is selected act as toggle.
         if (ImGui::Selectable(name.c_str(), selectedGameObjectIndex == i))
         {
-          if (!selectedWithMouse)
+          hasListSelection = true;
+          if (previousSelection != i)
           {
-            if (previousSelection != i)
-            {
-              selectedGameObjectIndex = i;
-              if (previousSelection >= 0)
-                EntityManager::UnsetFlags(
-                    gameData.gameObjects->at(previousSelection), FLAG_SELECTED);
-              EntityManager::SetFlags(gameData.gameObjects->at(i),
-                                      FLAG_SELECTED);
-            }
-            else if (previousSelection == i && previousSelection >= 0)
-            {
-              selectedGameObjectIndex = -1;
+            selectedGameObjectIndex = i;
+            if (previousSelection >= 0)
               EntityManager::UnsetFlags(
                   gameData.gameObjects->at(previousSelection), FLAG_SELECTED);
-            }
+            EntityManager::SetFlags(gameData.gameObjects->at(i), FLAG_SELECTED);
+          }
+          else if (previousSelection == i && previousSelection >= 0)
+          {
+            selectedGameObjectIndex = -1;
+            EntityManager::UnsetFlags(
+                gameData.gameObjects->at(previousSelection), FLAG_SELECTED);
           }
         }
       }
+
+      // Only process raycast selection if we aren't interacting with Editor UI
+      if (!io.WantCaptureMouse)
+      {
+        if (gameData.closestRaycastIndex >= 0)
+        {
+          if (previousSelection >= 0)
+            EntityManager::UnsetFlags(
+                gameData.gameObjects->at(previousSelection), FLAG_SELECTED);
+          EntityManager::SetFlags(
+              gameData.gameObjects->at(gameData.closestRaycastIndex),
+              FLAG_SELECTED);
+          selectedGameObjectIndex = gameData.closestRaycastIndex;
+        }
+      }
+
+      // Make the closestRaycastIndex as processed (invalidate)
+      gameData.closestRaycastIndex = -1;
     }
     ImGui::End(); // EntityBrowser
 
