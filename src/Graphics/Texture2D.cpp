@@ -1,4 +1,4 @@
-#include "Texture.h"
+#include "Texture2D.h"
 
 Texture2D::Texture2D()
     : Width(0), Height(0), Internal_Format(GL_RGB), Image_Format(GL_RGB),

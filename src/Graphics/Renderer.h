@@ -11,7 +11,7 @@
 #ifndef SPRITE_RENDERER_H
 #define SPRITE_RENDERER_H
 
-#include "Texture.h"
+#include "Texture2D.h"
 #include "Shader.h"
 
 #include <Thirdparty/glad/glad.h>

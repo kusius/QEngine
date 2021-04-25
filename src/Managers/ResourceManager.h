@@ -4,7 +4,7 @@
 #include <Thirdparty/glad/glad.h>
 #include <Thirdparty/assimp/material.h>
 
-#include <Graphics/Texture.h>
+#include <Graphics/Texture2D.h>
 #include <Graphics/Shader.h>
 
 #include <map>

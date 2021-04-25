@@ -1,7 +1,7 @@
 #include <Platform/Win64Platform.h>
 
 #include "EntityManager.h"
-#include <ResourceManager.h>
+#include <Managers/ResourceManager.h>
 #include <Graphics/Model.h>
 
 using namespace std;

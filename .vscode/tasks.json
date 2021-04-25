@@ -39,7 +39,7 @@
             "group": "none",
             "label": "Setup cmake Debug",
             "type": "shell",
-            "command": "cmake -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=debug ${workspaceFolder}\\src",
+            "command": "cmake -G 'NMake Makefiles' -DCMAKE_BUILD_TYPE=debug ${workspaceFolder}/src",
             "options": {
                 "cwd": "${workspaceFolder}/build/debug/"
             },

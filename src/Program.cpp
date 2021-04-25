@@ -3,7 +3,7 @@
 #include <Graphics/Renderer.h>
 #include <Managers/EntityManager.h>
 #include <Camera.h>
-#include <ResourceManager.h>
+#include <Managers/ResourceManager.h>
 #include <Thirdparty/assimp/version.h>
 #include <Thirdparty/glad/glad.h>
 #include <Thirdparty/glfw/glfw3.h>
@@ -298,11 +298,16 @@ int main(int argc, char **argv)
   double endFrameTime = 0.0;
   float rotateSpeed = 10.0f;
 
+#ifdef QDEBUG
   EditorUI::SetupContext(window);
   EditorUI::ShaderEditorOpenFile("Assets/Shaders/gameobject.frag");
+#endif
 
   InitPlatform();
+
+#ifdef QDEBUG
   InitDebug();
+#endif
 
   while (!glfwWindowShouldClose(window))
   {
@@ -330,6 +335,7 @@ int main(int argc, char **argv)
         6.0f * sin(rotateSpeed * (float)glm::radians(startFrameTime));
     END_DEBUG_REGION(UpdateWorldObjects);
 
+#ifdef QDEBUG
     BEGIN_DEBUG_REGION(UpdateDebugUI);
     EditorUI::NewFrame();
     EditorUI::Update(uiWindow, editorHasChanges, gameDataForEditor);
@@ -341,6 +347,7 @@ int main(int argc, char **argv)
     }
     uiWindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
     END_DEBUG_REGION(UpdateDebugUI);
+#endif
 
     BEGIN_DEBUG_REGION(Draw);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -360,6 +367,8 @@ int main(int argc, char **argv)
     highlightShader->SetMatrix4("view", view);
     highlightShader->SetMatrix4("projection", projection);
 
+    renderer->DrawCube(glm::vec3(0.5f), glm::vec3(1.0f, 3.0f, 1.0f), 0.0f,
+                       glm::vec3(1.0f));
     renderer->DrawGameObjects();
 
     lightShader->Use();
@@ -378,9 +387,8 @@ int main(int argc, char **argv)
       }
     }
 
-#endif
-
     EditorUI::Render();
+#endif
 
     // TODO(George): Fixed framerate:
     // we let glfw sync with monitor refresh rate.

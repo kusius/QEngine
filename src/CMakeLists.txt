@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 2.8.12)
 project(Q)
 
 
@@ -8,7 +8,7 @@ Graphics/Model.cpp
 Graphics/Shader.cpp
 Graphics/Renderer.cpp
 Graphics/InstancedRenderer.cpp
-Graphics/Texture.cpp
+Graphics/Texture2D.cpp
 )
 
 FILE(GLOB UI_SOURCE_FILES
@@ -22,7 +22,7 @@ set(SOURCE_FILES
 Program.cpp
 Platform/Platform.cpp
 Metrics/CountDebugRegions.cpp
-ResourceManager.cpp
+Managers/ResourceManager.cpp
 Managers/EntityManager.cpp
 Thirdparty/glad.c
 ${GRAPHICS_SOURCE_FILES}

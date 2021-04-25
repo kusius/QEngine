@@ -300,6 +300,7 @@ void Renderer::DrawGameObjects()
     }
   }
   glBindVertexArray(0);
+  glActiveTexture(GL_TEXTURE0);
 }
 
 inline void Renderer::bindTextures(unsigned int numTextures,
