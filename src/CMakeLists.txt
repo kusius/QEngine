@@ -11,6 +11,9 @@ Graphics/InstancedRenderer.cpp
 Graphics/Texture2D.cpp
 )
 
+FILE(GLOB SCENE_SOURCE_FILES
+Scene/*.cpp)
+
 FILE(GLOB UI_SOURCE_FILES
 UI/imgui*.cpp
 UI/UI.cpp
@@ -27,6 +30,7 @@ Managers/EntityManager.cpp
 Thirdparty/glad.c
 ${GRAPHICS_SOURCE_FILES}
 ${UI_SOURCE_FILES}
+${SCENE_SOURCE_FILES}
 )
 
 ## Compile Link ##
