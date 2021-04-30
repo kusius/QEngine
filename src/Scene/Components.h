@@ -8,8 +8,25 @@
 #include <Graphics/Texture2D.h>
 #include <Graphics/Shader.h>
 
+enum Shape
+{
+    CUBE,
+    SPRITE
+};
+
+struct TagComponent
+{
+    std::string Tag;
+};
+
+struct ShapeComponent
+{
+    Shape Shape = Shape::CUBE;
+};
+
 struct TransformComponent
 {
+    glm::vec3 Position    = {0.0f, 0.0f, 0.0f};
     glm::vec3 Translation = {0.0f, 0.0f, 0.0f};
     glm::vec3 Rotation    = {0.0f, 0.0f, 0.0f};
     glm::vec3 Scale       = {1.0f, 1.0f, 1.0f};
@@ -26,6 +43,11 @@ struct Render3DComponent
     std::vector<glm::vec2> TexCoords;
 };
 
+struct RenderableComponent
+{
+    glm::vec3 Color = {1.0f, 1.0f, 1.0f};
+};
+
 struct Render3DComponentI
 {
     unsigned int IndexPos;
@@ -40,6 +62,11 @@ struct Render3DComponentI
 
     unsigned int TexCoordPos;
     unsigned int TexCoordCount;
+};
+
+struct SelectableComponent
+{
+    bool Selected;
 };
 
 struct BoundingBoxComponent

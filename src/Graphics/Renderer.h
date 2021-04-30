@@ -18,9 +18,12 @@
 #include <Thirdparty/glm/glm.hpp>
 #include <Thirdparty/glm/gtc/matrix_transform.hpp>
 #include <Graphics/Model.h>
+#include <Objects/GameObjects.h>
 #include <Graphics/Shader.h>
 #include <Graphics/Model.h>
 #include <Graphics/Shader.h>
+#include <Graphics/Camera.h>
+#include <Scene/Components.h>
 
 #include <vector>
 
@@ -30,9 +33,14 @@ class Renderer
     // constructor inits shaders
     Renderer();
     Renderer(Shader &shader);
-    Renderer(Shader &shader, Shader &highlightShader);
+    Renderer(Shader &shader, Shader &highlightShader, Shader &unicolorShader);
     // Destructor
     ~Renderer();
+
+    void BeginFrame(const Camera &camera);
+
+    void EndFrame();
+
     // Renders a defined quad textured with given sprite
     void DrawCube(Texture2D &diffuseMap, Texture2D &specularMap,
                   Texture2D &emissionMap,
@@ -41,11 +49,12 @@ class Renderer
                   GLfloat rotation = 0.0f, GLboolean isSelected = GL_FALSE);
     void DrawCube(glm::vec3 position, glm::vec3 scale, GLfloat rotation,
                   glm::vec3 color);
+
+    void DrawShape(TransformComponent transform, ShapeComponent shape,
+                   RenderableComponent renderable);
     void DrawBoundingBox(const BoundingBox &bbox,
                          GLboolean wireframe = GL_FALSE);
-    void DrawPointLights(glm::vec3 pointLightPositions[],
-                         unsigned int numLights,
-                         glm::vec3 scale  = glm::vec3(1.0f, 1.0f, 1.0f),
+    void DrawPointLights(glm::vec3 scale  = glm::vec3(1.0f, 1.0f, 1.0f),
                          GLfloat rotation = 0.0f,
                          glm::vec3 color  = glm::vec3(1.0f));
     void DrawSprite(Texture2D &texture);
@@ -66,6 +75,7 @@ class Renderer
     // Render state
     Shader *shader;
     Shader *highlightShader;
+    Shader *unicolorShader;
     /**
      * @brief Bind the texture uniforms needed for our gameObject.frag fragment
      * shader

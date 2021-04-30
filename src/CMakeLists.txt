@@ -9,10 +9,14 @@ Graphics/Shader.cpp
 Graphics/Renderer.cpp
 Graphics/InstancedRenderer.cpp
 Graphics/Texture2D.cpp
+Graphics/Camera.cpp
 )
 
 FILE(GLOB SCENE_SOURCE_FILES
 Scene/*.cpp)
+
+FILE(GLOB GAME_SOURCE_FILES
+Game/*.cpp)
 
 FILE(GLOB UI_SOURCE_FILES
 UI/imgui*.cpp
@@ -31,6 +35,7 @@ Thirdparty/glad.c
 ${GRAPHICS_SOURCE_FILES}
 ${UI_SOURCE_FILES}
 ${SCENE_SOURCE_FILES}
+${GAME_SOURCE_FILES}
 )
 
 ## Compile Link ##
@@ -39,7 +44,7 @@ link_directories(${PROJECT_SOURCE_DIR}/Thirdparty/libs)
 
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /nologo /Zi  /EHsc /wd4005 /DQDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /nologo /Zi  /EHsc")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /nologo /Zi  /EHsc /O2")
 
 add_executable(Q ${SOURCE_FILES})
 
@@ -49,6 +54,7 @@ target_link_libraries(Q
                        debug IrrXMLd optimized IrrXML
                        debug assimp-vc142-mtd optimized assimp-vc142-mt)
 
+target_compile_features(Q PRIVATE cxx_std_17)
 
 #### Copy Assets ####
 add_custom_target(copy_assets

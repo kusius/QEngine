@@ -1,12 +1,15 @@
 #include <Platform/Win64Platform.h>
 #include <Metrics/CountDebugRegions.h>
 #include <Graphics/Renderer.h>
+#include <Scene/Components.h>
 #include <Managers/EntityManager.h>
 #include <Graphics/Camera.h>
 #include <Managers/ResourceManager.h>
 #include <Thirdparty/assimp/version.h>
 #include <Thirdparty/glad/glad.h>
 #include <Thirdparty/glfw/glfw3.h>
+#include <Thirdparty/entt/entt.hpp>
+#include <Game/Levels.h>
 #include <UI/UI.h>
 
 #include <limits>
@@ -30,11 +33,9 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *hader,
 void ShaderStaticData(Shader *shader, Shader *lightShader);
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-std::vector<GameObject> gameObjects;
-glm::mat4 projection = glm::mat4(1);
+std::vector<GameObject> gameObjects = {};
+glm::mat4 projection                = glm::mat4(1);
 EditorUI::GameData gameDataForEditor;
-
-Lights lights = {};
 
 // Video properties
 static int targetRefreshRate;
@@ -226,15 +227,8 @@ int main(int argc, char **argv)
     /*****************
     RESOURCE LOADING
     ******************/
-    lights.nPointLights           = 4; // this must be <= MAX_POINT_LIGHTS
-    lights.pointLightPositions[0] = glm::vec3(1.7f, 0.2f, 2.0f);
-    lights.pointLightPositions[1] = glm::vec3(2.3f, -3.3f, -4.0f);
-    lights.pointLightPositions[2] = glm::vec3(-4.0f, 2.0f, -6.0f);
-    lights.pointLightPositions[3] = glm::vec3(0.0f, 0.0f, -3.0f);
 
     // Make our shaders (read, compile, link)
-    ResourceManager::LoadTexture("Assets/UI/Textures/loading_screen.jpg", false,
-                                 "loading_screen");
     Shader *shader = ResourceManager::LoadShader(
         "Assets/Shaders/gameobject.vert", "Assets/Shaders/gameobject.frag",
         nullptr, "shader");
@@ -247,45 +241,13 @@ int main(int argc, char **argv)
 
     ShaderStaticData(shader, lightShader);
 
-    EntityManager::Init();
-    GameObject table1 = EntityManager::ImportModelFromFile(
-        "Assets/models/table/scene.gltf", "Table");
-    GameObject sofa1 = EntityManager::ImportModelFromFile(
-        "Assets/models/old_sofa/scene.gltf", "Sofa");
-    GameObject table2 = EntityManager::ImportModelFromFile(
-        "Assets/models/table/scene.gltf", "Table");
-    GameObject table3 = EntityManager::ImportModelFromFile(
-        "Assets/models/table/scene.gltf", "Table");
-    GameObject tile1 = EntityManager::ImportModelFromFile(
-        "Assets/Terrain/cobblestone_floor/cobblestone_floor.gltf", "Tile");
-
-    EntityManager::TransformModel(table1, glm::vec3(0.0f, -2.0f, 2.5f),
-                                  glm::vec3(-90.0f, 0.0f, 90.0f),
-                                  glm::vec3(0.1f));
-    EntityManager::TransformModel(table2, glm::vec3(0.0f, -2.0f, 6.5f),
-                                  glm::vec3(-90.0f, 0.0f, 90.0f),
-                                  glm::vec3(0.1f));
-    EntityManager::TransformModel(table3, glm::vec3(0.0f, -2.0f, 10.5f),
-                                  glm::vec3(-90.0f, 0.0f, 90.0f),
-                                  glm::vec3(0.1f));
-    EntityManager::TransformModel(sofa1, glm::vec3(0.0f, -2.0f, -1.5f));
-    EntityManager::TransformModel(tile1, glm::vec3(1.0f, -2.0f, 2.0f),
-                                  glm::vec3(0.0f, 0.0f, 0.0f),
-                                  glm::vec3(0.01f));
-
-    gameObjects.push_back(table1);
-    gameObjects.push_back(table2);
-    gameObjects.push_back(table3);
-    gameObjects.push_back(sofa1);
-    gameObjects.push_back(tile1);
     gameDataForEditor                      = {&gameObjects, 0};
     gameDataForEditor.view                 = &view;
     gameDataForEditor.projection           = &projection;
     gameDataForEditor.bRenderBoundingBoxes = false;
 
-    Renderer *renderer, *lightRenderer;
-    renderer      = new Renderer(*shader, *highlightShader);
-    lightRenderer = new Renderer(*lightShader);
+    Renderer *renderer;
+    renderer = new Renderer(*shader, *highlightShader, *lightShader);
 
     // EntityManager::TransformModel(table3,
     // glm::vec3(0.0f, -2.0f, 6.5f),
@@ -293,16 +255,18 @@ int main(int argc, char **argv)
     // glm::vec3(0.1f));
 
     // renderer prepares data based on current gameObjects SOA
-    renderer->SetupShaderData();
 
     double thisTime       = 0.0;
     double deltaTime      = 0.0;
     double startFrameTime = 0.0;
     double endFrameTime   = 0.0;
-    float rotateSpeed     = 10.0f;
 
-#ifdef QDEBUG
+    entt::registry registry;
+    // Game::MakeLevel(registry);
+    Game::MakeLevel(renderer);
+
     EditorUI::SetupContext(window);
+#ifdef QDEBUG
     EditorUI::ShaderEditorOpenFile("Assets/Shaders/gameobject.frag");
 #endif
 
@@ -328,58 +292,37 @@ int main(int argc, char **argv)
         camera.SetProjectionMatrix(projection);
         view = camera.GetViewMatrix();
 
-        lights.pointLightPositions[1].y =
-            6.0f * cos(rotateSpeed * (float)glm::radians(startFrameTime));
-        lights.pointLightPositions[1].z =
-            6.0f * sin(rotateSpeed * (float)glm::radians(startFrameTime));
-        lights.pointLightPositions[2].x =
-            6.0f * cos(rotateSpeed * (float)glm::radians(startFrameTime));
-        lights.pointLightPositions[2].z =
-            6.0f * sin(rotateSpeed * (float)glm::radians(startFrameTime));
+        Game::UpdateLevel((float)startFrameTime);
         END_DEBUG_REGION(UpdateWorldObjects);
 
-#ifdef QDEBUG
         BEGIN_DEBUG_REGION(UpdateDebugUI);
         EditorUI::NewFrame();
         EditorUI::Update(uiWindow, editorHasChanges, gameDataForEditor);
         if (editorHasChanges)
         {
-            ResourceManager::recompileShaders();
+            ResourceManager::RecompileShaders();
             ShaderStaticData(shader, lightShader);
             editorHasChanges = false;
         }
         uiWindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
         END_DEBUG_REGION(UpdateDebugUI);
-#endif
 
         BEGIN_DEBUG_REGION(Draw);
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
                 GL_STENCIL_BUFFER_BIT);
-        shader->Use();
-        shader->SetVector3f("spotLight.position", camera.Position);
-        shader->SetVector3f("spotLight.direction", camera.Front);
-        shader->SetVector3f("pointLights[2].position",
-                            lights.pointLightPositions[2]);
-        shader->SetVector3f("pointLights[1].position",
-                            lights.pointLightPositions[1]);
-        shader->SetVector3f("viewPos", camera.Position);
-        shader->SetMatrix4("view", view);
-        shader->SetMatrix4("projection", projection);
 
-        highlightShader->Use();
-        highlightShader->SetMatrix4("view", view);
-        highlightShader->SetMatrix4("projection", projection);
-
-        renderer->DrawCube(glm::vec3(0.5f), glm::vec3(1.0f, 3.0f, 1.0f), 0.0f,
-                           glm::vec3(1.0f));
+        renderer->BeginFrame(camera);
         renderer->DrawGameObjects();
+        renderer->DrawPointLights(glm::vec3(0.2f), 0.0f, glm::vec3(1.0f));
 
-        lightShader->Use();
-        lightShader->SetMatrix4("view", view);
-        lightShader->SetMatrix4("projection", projection);
-        lightRenderer->DrawPointLights(lights.pointLightPositions,
-                                       lights.nPointLights, glm::vec3(0.2f));
+        // auto eView =
+        //     registry.view<const TransformComponent, const ShapeComponent,
+        //                   const RenderableComponent>();
+        // for (auto [entity, transform, shape, renderable] : eView.each())
+        // {
+        //     lightRenderer->DrawShape(transform, shape, renderable);
+        // }
 
 #ifdef QDEBUG
         if (gameDataForEditor.bRenderBoundingBoxes)
@@ -387,19 +330,13 @@ int main(int argc, char **argv)
             for (int i = 0; i < gameObjects.size(); ++i)
             {
                 GameObject g = gameObjects.at(i);
-                lightRenderer->DrawBoundingBox(EntityManager::GetAABBWorld(g),
-                                               GL_TRUE);
+                renderer->DrawBoundingBox(EntityManager::GetAABBWorld(g),
+                                          GL_TRUE);
             }
         }
-
-        EditorUI::Render();
 #endif
+        EditorUI::Render();
 
-        // TODO(George): Fixed framerate:
-        // we let glfw sync with monitor refresh rate.
-        // If we want to implement a fixed framerate, we must switch to
-        // sleep for integral amount of miliseconds, then busy wait for the rest
-        // and finally call SwapBuffers afterwards.
         glfwSwapBuffers(window);
         END_DEBUG_REGION(Draw);
 
@@ -421,6 +358,7 @@ int main(int argc, char **argv)
 
 void ShaderStaticData(Shader *shader, Shader *lightShader)
 {
+    const Lights lights = EntityManager::lights;
     // GL_TEXTURE1 = diffuse, GL_TEXTURE2 = specular, GL_TEXTURE3 = emission,
     // GL_TEXTURE4 = normal
     shader->Use();
@@ -544,7 +482,7 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader,
             camera.ProcessKeyboard(DOWN, deltaTime);
         if (ProcessKeyTap(GLFW_KEY_R, window))
         {
-            ResourceManager::recompileShaders();
+            ResourceManager::RecompileShaders();
             ShaderStaticData(shader, lightShader);
         }
         if (ProcessKeyTap(GLFW_KEY_P, window))

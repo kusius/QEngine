@@ -1,6 +1,5 @@
 
-#ifndef CAMERA_H
-#define CAMERA_H
+#pragma once
 
 #include <Thirdparty/glm/glm.hpp>
 #include <Thirdparty/glm/gtc/matrix_transform.hpp>
@@ -87,10 +86,12 @@ class Camera
 
     // Returns the view matrix calculated using Euler Angles and the LookAt
     // Matrix
-    glm::mat4 GetViewMatrix()
+    glm::mat4 GetViewMatrix() const
     {
         return glm::lookAt(Position, Position + Front, Up);
     }
+
+    glm::mat4 GetProjectionMatrix() const { return projectionMatrix; }
 
     void SetProjectionMatrix(glm::mat4 projection)
     {
@@ -244,4 +245,3 @@ class Camera
         Up    = glm::normalize(glm::cross(Right, Front));
     }
 };
-#endif

@@ -7,6 +7,7 @@
 using namespace std;
 
 GameObjects EntityManager::gameObjects;
+Lights EntityManager::lights;
 GameObjectsInstanced EntityManager::terrain;
 unsigned int EntityManager::nextInstanceID;
 std::vector<BoundingBox> defaultBoundingBoxes;
@@ -24,7 +25,7 @@ std::map<string, unsigned int> EntityManager::loadedModels;
 static BoundingBox transformBoundingBox(const BoundingBox &bbox,
                                         const glm::mat4 &transform);
 
-void EntityManager::Init()
+void EntityManager::Reset()
 {
     nextInstanceID = 0;
     loadedModels.clear();

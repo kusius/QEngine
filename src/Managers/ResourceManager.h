@@ -26,7 +26,7 @@ class ResourceManager
     static std::map<std::string, Texture> AITextures;
     // Recompile ALL shaders. TODO: Most likely a bad idea, done for testing
     // now.
-    static void recompileShaders();
+    static void RecompileShaders();
     // Load and generate a shader program given the source files
     static Shader *LoadShader(const GLchar *vShaderFile,
                               const GLchar *fShaderFile,

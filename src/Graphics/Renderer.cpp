@@ -10,10 +10,12 @@ Renderer::Renderer(Shader &shader)
     this->initRenderData();
 }
 
-Renderer::Renderer(Shader &shader, Shader &highlightShader)
+Renderer::Renderer(Shader &shader, Shader &highlightShader,
+                   Shader &unicolorShader)
 {
     this->highlightShader = &highlightShader;
     this->shader          = &shader;
+    this->unicolorShader  = &unicolorShader;
     this->initRenderData();
 }
 
@@ -106,6 +108,43 @@ void Renderer::initRenderData()
     // we do NOT unbind EBO while VAO is still bound!!
     glBindVertexArray(0);
 }
+
+void Renderer::BeginFrame(const Camera &camera)
+{
+    const Lights lights = EntityManager::lights;
+    shader->Use();
+    shader->SetVector3f("spotLight.position", camera.Position);
+    shader->SetVector3f("spotLight.direction", camera.Front);
+    shader->SetVector3f("pointLights[2].position",
+                        lights.pointLightPositions[2]);
+    shader->SetVector3f("pointLights[1].position",
+                        lights.pointLightPositions[1]);
+    shader->SetVector3f("viewPos", camera.Position);
+    shader->SetMatrix4("view", camera.GetViewMatrix());
+    shader->SetMatrix4("projection", camera.GetProjectionMatrix());
+
+    highlightShader->Use();
+    highlightShader->SetMatrix4("view", camera.GetViewMatrix());
+    highlightShader->SetMatrix4("projection", camera.GetProjectionMatrix());
+
+    unicolorShader->Use();
+    unicolorShader->SetMatrix4("view", camera.GetViewMatrix());
+    unicolorShader->SetMatrix4("projection", camera.GetProjectionMatrix());
+}
+
+void Renderer::DrawShape(TransformComponent transform, ShapeComponent shape,
+                         RenderableComponent renderable)
+{
+    switch (shape.Shape)
+    {
+    case CUBE:
+        DrawCube(transform.Position, transform.Scale, 0.0f, renderable.Color);
+        break;
+    default:
+        break;
+    };
+}
+
 void Renderer::DrawCube(Texture2D &diffuseMap, Texture2D &specularMap,
                         Texture2D &emissionMap, glm::vec3 translation,
                         glm::vec2 scale, GLfloat rotation, GLboolean isSelected)
@@ -173,6 +212,7 @@ void Renderer::DrawCube(glm::vec3 position, glm::vec3 scale, GLfloat rotation,
     // set the uniforms
     this->shader->Use();
     this->shader->SetMatrix4("model", transform);
+    this->shader->SetVector3f("colorAttr", color);
 
     glBindVertexArray(this->cubeVAO);
     // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -199,13 +239,13 @@ void Renderer::DrawBoundingBox(const BoundingBox &bbox, GLboolean wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void Renderer::DrawPointLights(glm::vec3 pointLightPositions[],
-                               unsigned int numLights, glm::vec3 scale,
-                               GLfloat rotation, glm::vec3 color)
+void Renderer::DrawPointLights(glm::vec3 scale, GLfloat rotation,
+                               glm::vec3 color)
 {
+    unsigned int numLights = EntityManager::lights.nPointLights;
     for (unsigned int i = 0; i < numLights; i++)
     {
-        glm::vec3 translation = pointLightPositions[i];
+        glm::vec3 translation = EntityManager::lights.pointLightPositions[i];
         // perform translations
         glm::mat4 transform = glm::mat4(1.0f);
         // translate
@@ -217,8 +257,9 @@ void Renderer::DrawPointLights(glm::vec3 pointLightPositions[],
                                 glm::vec3(0.5f, 1.0f, 0.0f));
 
         // set the uniforms
-        this->shader->Use();
-        this->shader->SetMatrix4("model", transform);
+        this->unicolorShader->Use();
+        this->unicolorShader->SetMatrix4("model", transform);
+        this->unicolorShader->SetVector3f("colorAttr", color);
 
         glBindVertexArray(this->cubeVAO);
         // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -345,6 +386,8 @@ void Renderer::SetupShaderData()
 {
     unsigned int numVertices = EntityManager::gameObjects.vertices.size();
     unsigned int numIndices  = EntityManager::gameObjects.indices.size();
+    if (numVertices == 0 || numIndices == 0)
+        return;
 
     glGenVertexArrays(1, &mVAO);
     glBindVertexArray(mVAO);

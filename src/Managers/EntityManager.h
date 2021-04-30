@@ -13,6 +13,8 @@ class EntityManager
     static GameObjects gameObjects;
     // Structures of arrays describing all instanced objects
     static GameObjectsInstanced terrain;
+    // Structure holding the lights of a scene
+    static Lights lights;
 
     // string: the path of the loaded model
     // unsigned int: the model index into the gameObjects SOA
@@ -21,7 +23,7 @@ class EntityManager
     static std::vector<glm::vec3> GetAABBVertices(const BoundingBox &bbox);
 
     // Initialize the EntityManager class.
-    static void Init();
+    static void Reset();
 
     /**
      * @brief Import a model from path, give a new ID and store in gameObjects
