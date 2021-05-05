@@ -7,6 +7,8 @@
 #include <UI/ImGuizmo.h>
 #include <Metrics/CountDebugRegions.h>
 #include <Managers/EntityManager.h>
+#include <Thirdparty/entt/entt.hpp>
+#include <Scene/Components.h>
 
 #include <cstdint>
 #include <vector>
@@ -16,12 +18,15 @@ namespace EditorUI
 
 struct GameData
 {
-  std::vector<GameObject> *gameObjects;
-  int closestRaycastIndex;
-  glm::mat4 *view, *projection;
-  float lastFrameTime;
-  bool bSnapTranslation;
-  bool bRenderBoundingBoxes;
+    std::vector<Render3DComponent> *gameObjects;
+    entt::basic_view<entt::entity, entt::exclude_t<>, const Render3DComponent>
+        *eView;
+    entt::entity closestRaycastEntity;
+    int closestRaycastIndex;
+    glm::mat4 *view, *projection;
+    float lastFrameTime;
+    bool bSnapTranslation;
+    bool bRenderBoundingBoxes;
 };
 
 void SetupContext(GLFWwindow *window);

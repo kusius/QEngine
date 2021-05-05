@@ -34,13 +34,13 @@ struct TransformComponent
 
 struct Render3DComponent
 {
-    std::vector<unsigned int> Indices;
-    std::vector<unsigned int> TextureIds;
-    std::vector<std::string> TextureType;
-    std::vector<glm::vec3> VertexPos;
-    std::vector<glm::vec3> Normals;
-    std::vector<glm::vec3> Tangents;
-    std::vector<glm::vec2> TexCoords;
+    std::string name; // friendly name given on creation
+    std::string
+        path; // the path of the descriptor file for the object (.gltf etc.)
+    unsigned int id;
+    unsigned int modelIndex;
+    unsigned int instanceIndex;
+    bool rayCastSelected;
 };
 
 struct RenderableComponent

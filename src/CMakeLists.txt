@@ -7,7 +7,6 @@ Graphics/Mesh.cpp
 Graphics/Model.cpp
 Graphics/Shader.cpp
 Graphics/Renderer.cpp
-Graphics/InstancedRenderer.cpp
 Graphics/Texture2D.cpp
 Graphics/Camera.cpp
 )

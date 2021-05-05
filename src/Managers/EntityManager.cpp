@@ -8,7 +8,6 @@ using namespace std;
 
 GameObjects EntityManager::gameObjects;
 Lights EntityManager::lights;
-GameObjectsInstanced EntityManager::terrain;
 unsigned int EntityManager::nextInstanceID;
 std::vector<BoundingBox> defaultBoundingBoxes;
 std::map<string, unsigned int> EntityManager::loadedModels;
@@ -31,60 +30,15 @@ void EntityManager::Reset()
     loadedModels.clear();
 }
 
-std::vector<GameObject>
-EntityManager::ImportTerrainQuadSet(const char *texturesPath,
-                                    unsigned int numInstances, const char *name)
+Render3DComponent EntityManager::ImportModelFromFile(const char *path,
+                                                     const char *name)
 {
-    // TODO support appending new set to terrain SOA
-    // now we do only one tile type (set of textures)
-    GameObjectsInstanced *gos = &(EntityManager::terrain);
-
-    /*
-    std::vector<Texture> textures = ResourceManager::LoadMaterialGLTF(
-        std::string(texturesPath) + "/minimal.gltf");
-  */
-    std::string tmp = std::string(texturesPath) + "/cobblestone_floor.gltf";
-
-    Model m(tmp.c_str());
-
-    for (unsigned int i = 0; i < m.meshes.size(); ++i)
-    {
-        gos->textures.insert(gos->textures.end(), m.meshes[i].textures.begin(),
-                             m.meshes[i].textures.end());
-        gos->vertices.insert(gos->vertices.end(), m.meshes[i].vertices.begin(),
-                             m.meshes[i].vertices.end());
-        gos->indices.insert(gos->indices.end(), m.meshes[i].indices.begin(),
-                            m.meshes[i].indices.end());
-    }
-    gos->numTextures = gos->textures.size();
-
-    std::vector<GameObject> terrainSet;
-
-    for (unsigned int i = 0; i < numInstances; i++)
-    {
-        gos->modelMatrices.push_back(glm::mat4(1.0f));
-        gos->positions.push_back(glm::vec3(0.0f));
-        gos->scales.push_back(glm::vec3(1.0f));
-        gos->angles.push_back(glm::vec3(0.0f));
-        gos->flags.push_back(FLAG_NONE);
-
-        GameObject terrainTile = {};
-        terrainTile.name       = std::string(name);
-        terrainTile.id         = i;
-        terrainSet.push_back(terrainTile);
-    }
-    return terrainSet;
-}
-
-GameObject EntityManager::ImportModelFromFile(const char *path,
-                                              const char *name)
-{
-    GameObjects *gos               = &(EntityManager::gameObjects);
-    unsigned int thisInstanceID    = nextInstanceID;
-    GameObject thisGameObject      = {};
-    thisGameObject.rayCastSelected = false;
-    thisGameObject.name            = std::string(name);
-    thisGameObject.path            = std::string(path);
+    GameObjects *gos                 = &(EntityManager::gameObjects);
+    unsigned int thisInstanceID      = nextInstanceID;
+    Render3DComponent thisGameObject = {};
+    thisGameObject.rayCastSelected   = false;
+    thisGameObject.name              = std::string(name);
+    thisGameObject.path              = std::string(path);
 
     auto it = loadedModels.find(std::string(path));
     if (it != loadedModels.end())
@@ -167,7 +121,7 @@ glm::mat4 aabbModelMatrix(const BoundingBox &bbox)
 }
 
 // NOTE: If we need, we can store this world AABB, per object for quicker access
-BoundingBox EntityManager::GetAABBWorld(const GameObject &g)
+BoundingBox EntityManager::GetAABBWorld(const Render3DComponent &g)
 {
     BoundingBox box = defaultBoundingBoxes[g.modelIndex];
     glm::mat4 model =
@@ -201,7 +155,7 @@ void createTransformMatrix(glm::mat4 &transform, glm::vec3 const &move,
     transform = glm::scale(transform, scale);
 }
 
-void EntityManager::TransformModel(GameObject go, glm::vec3 move,
+void EntityManager::TransformModel(Render3DComponent go, glm::vec3 move,
                                    glm::vec3 rotation, glm::vec3 scale)
 {
     if (go.id < MAX_GAME_OBJECTS && go.id < nextInstanceID)
@@ -218,20 +172,6 @@ void EntityManager::TransformModel(GameObject go, glm::vec3 move,
 
         EntityManager::gameObjects
             .modelMatrices[go.modelIndex][go.instanceIndex] = transform;
-    }
-}
-
-void EntityManager::TransformTerrainTile(GameObject go, glm::vec3 move,
-                                         glm::vec3 rotation, glm::vec3 scale)
-{
-    if (go.id < EntityManager::terrain.modelMatrices.size())
-    {
-        EntityManager::terrain.positions[go.id] += move;
-        EntityManager::terrain.angles[go.id] = rotation;
-        EntityManager::terrain.scales[go.id] = scale;
-        glm::mat4 transform;
-        createTransformMatrix(transform, move, rotation, scale);
-        EntityManager::terrain.modelMatrices[go.id] = transform;
     }
 }
 
@@ -271,17 +211,17 @@ static BoundingBox transformBoundingBox(const BoundingBox &bbox,
     return newbbox;
 }
 
-void EntityManager::SetFlags(GameObject go, uint16_t flags)
+void EntityManager::SetFlags(Render3DComponent go, uint16_t flags)
 {
     EntityManager::gameObjects.flags[go.modelIndex][go.instanceIndex] |= flags;
 }
 
-void EntityManager::UnsetFlags(GameObject go, uint16_t flags)
+void EntityManager::UnsetFlags(Render3DComponent go, uint16_t flags)
 {
     EntityManager::gameObjects.flags[go.modelIndex][go.instanceIndex] &= ~flags;
 }
 
-uint16_t EntityManager::GetFlags(GameObject go, uint16_t flags)
+uint16_t EntityManager::GetFlags(Render3DComponent go, uint16_t flags)
 {
     return EntityManager::gameObjects.flags[go.modelIndex][go.instanceIndex] &
            flags;

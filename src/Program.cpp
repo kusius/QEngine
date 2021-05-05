@@ -28,14 +28,13 @@ void MouseCallback(GLFWwindow *window, double xpos, double ypos);
 void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods);
 void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
-void ProcessInput(GLFWwindow *window, float deltaTime, Shader *hader,
-                  Shader *lightShader);
-void ShaderStaticData(Shader *shader, Shader *lightShader);
+void ProcessInput(GLFWwindow *window, float deltaTime, Renderer *renderer);
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
-std::vector<GameObject> gameObjects = {};
-glm::mat4 projection                = glm::mat4(1);
+std::vector<Render3DComponent> gameObjects = {};
+glm::mat4 projection                       = glm::mat4(1);
 EditorUI::GameData gameDataForEditor;
+Game game;
 
 // Video properties
 static int targetRefreshRate;
@@ -165,7 +164,7 @@ void PrintLibVersions()
 }
 
 int SelectClosestObject(double mousex, double mousey, int width, int height,
-                        std::vector<GameObject> *gameObjects)
+                        std::vector<Render3DComponent> *gameObjects)
 {
     float minDistance = std::numeric_limits<float>::max();
     float distance;
@@ -239,13 +238,6 @@ int main(int argc, char **argv)
         "Assets/Shaders/gameobject.vert", "Assets/Shaders/diffusecolor.frag",
         nullptr, "highlight");
 
-    ShaderStaticData(shader, lightShader);
-
-    gameDataForEditor                      = {&gameObjects, 0};
-    gameDataForEditor.view                 = &view;
-    gameDataForEditor.projection           = &projection;
-    gameDataForEditor.bRenderBoundingBoxes = false;
-
     Renderer *renderer;
     renderer = new Renderer(*shader, *highlightShader, *lightShader);
 
@@ -262,8 +254,14 @@ int main(int argc, char **argv)
     double endFrameTime   = 0.0;
 
     entt::registry registry;
-    // Game::MakeLevel(registry);
-    Game::MakeLevel(renderer);
+    game.MakeLevel(renderer, registry);
+
+    auto eView                   = registry.view<const Render3DComponent>();
+    gameDataForEditor            = {&gameObjects, 0};
+    gameDataForEditor.eView      = &eView;
+    gameDataForEditor.view       = &view;
+    gameDataForEditor.projection = &projection;
+    gameDataForEditor.bRenderBoundingBoxes = false;
 
     EditorUI::SetupContext(window);
 #ifdef QDEBUG
@@ -282,7 +280,7 @@ int main(int argc, char **argv)
         startFrameTime = glfwGetTime();
 
         BEGIN_DEBUG_REGION(ProcessInput);
-        ProcessInput(window, (float)deltaTime, shader, lightShader);
+        ProcessInput(window, (float)deltaTime, renderer);
         END_DEBUG_REGION(ProcessInput);
 
         BEGIN_DEBUG_REGION(UpdateWorldObjects);
@@ -292,7 +290,7 @@ int main(int argc, char **argv)
         camera.SetProjectionMatrix(projection);
         view = camera.GetViewMatrix();
 
-        Game::UpdateLevel((float)startFrameTime);
+        game.UpdateLevel((float)startFrameTime);
         END_DEBUG_REGION(UpdateWorldObjects);
 
         BEGIN_DEBUG_REGION(UpdateDebugUI);
@@ -301,7 +299,7 @@ int main(int argc, char **argv)
         if (editorHasChanges)
         {
             ResourceManager::RecompileShaders();
-            ShaderStaticData(shader, lightShader);
+            game.ShaderStaticData(renderer);
             editorHasChanges = false;
         }
         uiWindowFocused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
@@ -329,7 +327,7 @@ int main(int argc, char **argv)
         {
             for (int i = 0; i < gameObjects.size(); ++i)
             {
-                GameObject g = gameObjects.at(i);
+                Render3DComponent g = gameObjects.at(i);
                 renderer->DrawBoundingBox(EntityManager::GetAABBWorld(g),
                                           GL_TRUE);
             }
@@ -354,53 +352,6 @@ int main(int argc, char **argv)
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
-}
-
-void ShaderStaticData(Shader *shader, Shader *lightShader)
-{
-    const Lights lights = EntityManager::lights;
-    // GL_TEXTURE1 = diffuse, GL_TEXTURE2 = specular, GL_TEXTURE3 = emission,
-    // GL_TEXTURE4 = normal
-    shader->Use();
-    shader->SetInteger("material.texture_diffuse1", 0);
-    shader->SetInteger("material.texture_specular1", 1);
-    shader->SetInteger("material.texture_emission1", 2);
-    // set the shininess
-    shader->SetFloat("material.shininess", 10.0f);
-
-    //******** DIRECTIONAL LIGHT ************
-    shader->SetVector3f("dirLight.direction", 1.0f, 1.0f, 1.0f);
-    shader->SetVector3f("dirLight.ambient", glm::vec3(0.0f)); // a dark ambient
-    shader->SetVector3f("dirLight.diffuse",
-                        glm::vec3(0.5f)); // darken the light a bit
-    shader->SetVector3f("dirLight.specular", glm::vec3(1.0f)); // full white
-
-    for (unsigned int i = 0; i < lights.nPointLights; i++)
-    {
-        std::string number = std::to_string(i);
-
-        shader->SetVector3f(("pointLights[" + number + "].position").c_str(),
-                            lights.pointLightPositions[i]);
-        shader->SetVector3f(("pointLights[" + number + "].ambient").c_str(),
-                            glm::vec3(0.1f));
-        shader->SetVector3f(("pointLights[" + number + "].diffuse").c_str(),
-                            glm::vec3(0.5f));
-        shader->SetVector3f(("pointLights[" + number + "].specular").c_str(),
-                            glm::vec3(1.0f));
-        shader->SetFloat(("pointLights[" + number + "].constant").c_str(),
-                         1.0f);
-        shader->SetFloat(("pointLights[" + number + "].linear").c_str(), 0.09f);
-        shader->SetFloat(("pointLights[" + number + "].quadratic").c_str(),
-                         0.032f);
-    }
-
-    //***************** SPOTLIGHT ****************
-    shader->SetVector3f("spotLight.ambient", glm::vec3(0.1f)); // a dark ambient
-    shader->SetVector3f("spotLight.diffuse",
-                        glm::vec3(1.0f)); // darken the light a bit
-    shader->SetVector3f("spotLight.specular", glm::vec3(1.0f)); // full white
-    shader->SetFloat("spotLight.cutoff", glm::cos(glm::radians(12.5f)));
-    shader->SetFloat("spotLight.outercutoff", glm::cos(glm::radians(17.5f)));
 }
 
 void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods)
@@ -442,8 +393,7 @@ inline bool ProcessKeyTap(int key_code, GLFWwindow *window)
     return ret;
 }
 
-void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader,
-                  Shader *lightShader)
+void ProcessInput(GLFWwindow *window, float deltaTime, Renderer *renderer)
 {
     if (ProcessKeyTap(GLFW_KEY_ESCAPE, window))
     {
@@ -483,7 +433,7 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Shader *shader,
         if (ProcessKeyTap(GLFW_KEY_R, window))
         {
             ResourceManager::RecompileShaders();
-            ShaderStaticData(shader, lightShader);
+            game.ShaderStaticData(renderer);
         }
         if (ProcessKeyTap(GLFW_KEY_P, window))
         {

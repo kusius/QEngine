@@ -71,11 +71,11 @@ class Renderer
      */
     void SetupShaderData();
 
-  protected:
-    // Render state
     Shader *shader;
     Shader *highlightShader;
     Shader *unicolorShader;
+
+  protected:
     /**
      * @brief Bind the texture uniforms needed for our gameObject.frag fragment
      * shader

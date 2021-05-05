@@ -12,7 +12,7 @@ static TextEditor editor;
 static auto lang = TextEditor::LanguageDefinition::GLSL();
 static std::string currentFile;
 
-static int selectedGameObjectIndex = -1;
+static entt::entity selectedGameObjectIndex = entt::null;
 
 void EditorUI::SetupContext(GLFWwindow *window)
 {
@@ -179,37 +179,41 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
         }
         ImGui::End(); // Debug Counters
 
+        auto eView = gameData.eView;
         if (ImGui::Begin("Entity Browser", nullptr, 0))
         {
-            const int previousSelection = selectedGameObjectIndex;
-            bool hasListSelection       = false;
-            for (int i = 0; i < gameData.gameObjects->size(); i++)
+            const entt::entity previousSelection = selectedGameObjectIndex;
+            bool hasListSelection                = false;
+            for (auto [entity, gameObject] : eView->each())
             {
-                string name =
-                    string("(" + to_string(gameData.gameObjects->at(i).id) +
-                           ") " + gameData.gameObjects->at(i).name);
+                string name = string("(" + to_string(gameObject.id) + ") " +
+                                     gameObject.name);
                 // See if there is a selection from the selectable list
                 // if same item is selected act as toggle.
                 if (ImGui::Selectable(name.c_str(),
-                                      selectedGameObjectIndex == i))
+                                      selectedGameObjectIndex == entity))
                 {
                     hasListSelection = true;
-                    if (previousSelection != i)
+                    if (previousSelection != entity)
                     {
-                        selectedGameObjectIndex = i;
-                        if (previousSelection >= 0)
-                            EntityManager::UnsetFlags(
-                                gameData.gameObjects->at(previousSelection),
-                                FLAG_SELECTED);
-                        EntityManager::SetFlags(gameData.gameObjects->at(i),
-                                                FLAG_SELECTED);
+                        selectedGameObjectIndex = entity;
+                        if (previousSelection != entt::null)
+                        {
+                            auto &component =
+                                eView->get<const Render3DComponent>(
+                                    previousSelection);
+
+                            EntityManager::UnsetFlags(component, FLAG_SELECTED);
+                        }
+                        EntityManager::SetFlags(gameObject, FLAG_SELECTED);
                     }
-                    else if (previousSelection == i && previousSelection >= 0)
+                    else if (previousSelection == entity &&
+                             previousSelection != entt::null)
                     {
-                        selectedGameObjectIndex = -1;
-                        EntityManager::UnsetFlags(
-                            gameData.gameObjects->at(previousSelection),
-                            FLAG_SELECTED);
+                        selectedGameObjectIndex = entt::null;
+                        auto &component = eView->get<const Render3DComponent>(
+                            previousSelection);
+                        EntityManager::UnsetFlags(component, FLAG_SELECTED);
                     }
                 }
             }
@@ -221,14 +225,16 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
                 if (!gameData.gameObjects->empty() &&
                     gameData.closestRaycastIndex >= 0)
                 {
-                    if (previousSelection >= 0)
-                        EntityManager::UnsetFlags(
-                            gameData.gameObjects->at(previousSelection),
-                            FLAG_SELECTED);
+                    if (previousSelection != entt::null)
+                    {
+                        auto &component = eView->get<const Render3DComponent>(
+                            previousSelection);
+                        EntityManager::UnsetFlags(component, FLAG_SELECTED);
+                    }
                     EntityManager::SetFlags(
                         gameData.gameObjects->at(gameData.closestRaycastIndex),
                         FLAG_SELECTED);
-                    selectedGameObjectIndex = gameData.closestRaycastIndex;
+                    selectedGameObjectIndex = gameData.closestRaycastEntity;
                 }
             }
 
@@ -237,22 +243,27 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
         }
         ImGui::End(); // EntityBrowser
 
-        if (!gameData.gameObjects->empty() && selectedGameObjectIndex >= 0)
+        if (selectedGameObjectIndex != entt::null)
         {
-            GameObject g = gameData.gameObjects->at(selectedGameObjectIndex);
-            glm::mat4 *matrix =
-                &(EntityManager::gameObjects
-                      .modelMatrices[g.modelIndex][g.instanceIndex]);
+            Render3DComponent g =
+                eView->get<const Render3DComponent>(selectedGameObjectIndex);
+            {
+                glm::mat4 *matrix =
+                    &(EntityManager::gameObjects
+                          .modelMatrices[g.modelIndex][g.instanceIndex]);
 
-            ImGuizmo::BeginFrame();
-            ImGui::Begin("Editor");
-            if (ImGui::RadioButton("Draw AABBs", gameData.bRenderBoundingBoxes))
-                gameData.bRenderBoundingBoxes = !gameData.bRenderBoundingBoxes;
+                ImGuizmo::BeginFrame();
+                ImGui::Begin("Editor");
+                if (ImGui::RadioButton("Draw AABBs",
+                                       gameData.bRenderBoundingBoxes))
+                    gameData.bRenderBoundingBoxes =
+                        !gameData.bRenderBoundingBoxes;
 
-            ImGuizmo::SetID(0);
-            EditTransform(glm::value_ptr(*gameData.view),
-                          glm::value_ptr(*gameData.projection),
-                          (float *)matrix);
+                ImGuizmo::SetID(0);
+                EditTransform(glm::value_ptr(*gameData.view),
+                              glm::value_ptr(*gameData.projection),
+                              (float *)matrix);
+            }
             ImGui::End(); // Transform Guizmo
         }
     }

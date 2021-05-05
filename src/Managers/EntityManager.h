@@ -11,8 +11,6 @@ class EntityManager
   public:
     // Structure of arrays describing all gameobjects.
     static GameObjects gameObjects;
-    // Structures of arrays describing all instanced objects
-    static GameObjectsInstanced terrain;
     // Structure holding the lights of a scene
     static Lights lights;
 
@@ -31,7 +29,7 @@ class EntityManager
      * @return GameObject struct containing the instance and model ID as well as
      * the unique ID for that gameobject
      */
-    static GameObject ImportModelFromFile(const char *path,
+    static Render3DComponent ImportModelFromFile(const char *path,
                                           const char *name = "unnamed");
     /**
      * @brief Take a texture directory and import specified amount of tiles
@@ -42,7 +40,7 @@ class EntityManager
      * @param numInstances How many instances should be created
      * @param name A friendly name for this tile set
      */
-    static std::vector<GameObject>
+    static std::vector<Render3DComponent>
     ImportTerrainQuadSet(const char *texturesPath, unsigned int numInstances,
                          const char *name = "unnamed_terrain");
 
@@ -57,12 +55,12 @@ class EntityManager
      * @param scale the amount to scale as a percentage of the original scale
      * in x, y, z
      */
-    static void TransformModel(GameObject go,
+    static void TransformModel(Render3DComponent go,
                                glm::vec3 position = glm::vec3(0.0),
                                glm::vec3 rotation = glm::vec3(0.0),
                                glm::vec3 scale    = glm::vec3(1.0));
 
-    static void EntityManager::TransformTerrainTile(GameObject go,
+    static void EntityManager::TransformTerrainTile(Render3DComponent go,
                                                     glm::vec3 move,
                                                     glm::vec3 rotation,
                                                     glm::vec3 scale);
@@ -73,13 +71,13 @@ class EntityManager
     // Scale a GameObject
     static void Scale(unsigned int id, glm::vec3 scale);
     // Set a gameobject's flags
-    static void SetFlags(GameObject go, uint16_t flags);
+    static void SetFlags(Render3DComponent go, uint16_t flags);
     // Unset a gameobject's flags
-    static void UnsetFlags(GameObject go, uint16_t flags);
+    static void UnsetFlags(Render3DComponent go, uint16_t flags);
     // Get a gameobject's flags
-    static uint16_t GetFlags(GameObject go, uint16_t flags);
+    static uint16_t GetFlags(Render3DComponent go, uint16_t flags);
     // Get a gameobject's bounding box in world coordinates
-    static BoundingBox GetAABBWorld(const GameObject &g);
+    static BoundingBox GetAABBWorld(const Render3DComponent &g);
 
   private:
     EntityManager(){};
