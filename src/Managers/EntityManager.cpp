@@ -11,7 +11,6 @@ Lights EntityManager::lights;
 unsigned int EntityManager::nextInstanceID;
 std::vector<BoundingBox> defaultBoundingBoxes;
 std::map<string, unsigned int> EntityManager::loadedModels;
-
 /**
  * @brief Perform a transform of an Axis-Aligned bounding box, keeping it
  * Axis-Aligned.
@@ -47,6 +46,7 @@ Render3DComponent EntityManager::ImportModelFromFile(const char *path,
         thisGameObject.modelIndex    = it->second;
         thisGameObject.instanceIndex = gos->modelMatrices[it->second].size();
 
+        // Todo pointer to meshes in memory and dont copy meshes
         gos->modelMatrices[it->second].push_back(glm::mat4(1.0f));
         gos->positions[it->second].push_back(glm::vec3(0.0f));
         gos->angles[it->second].push_back(glm::vec3(0.0f));
@@ -64,27 +64,38 @@ Render3DComponent EntityManager::ImportModelFromFile(const char *path,
         thisGameObject.instanceIndex    = 0;
         thisGameObject.modelIndex       = gos->numMeshes.size();
         loadedModels[std::string(path)] = gos->numMeshes.size();
+        StoredModelData storedModelData = {};
+        storedModelData.vIndex          = gos->vertices.size();
+        storedModelData.iIndex          = gos->indices.size();
+
+        unsigned int totalVertices = 0;
+        unsigned int totalIndices  = 0;
         gos->numMeshes.push_back(m.meshes.size());
         std::vector<BoundingBox> aabbs;
         for (unsigned int i = 0; i < m.meshes.size(); i++)
         {
+            Mesh mesh = m.meshes[i];
+
             // Mesh data
-            gos->numVertices.push_back(m.meshes[i].vertices.size());
-            gos->numIndices.push_back(m.meshes[i].indices.size());
-            gos->numTextures.push_back(m.meshes[i].textures.size());
 
-            gos->vertices.insert(gos->vertices.end(),
-                                 m.meshes[i].vertices.begin(),
-                                 m.meshes[i].vertices.end());
+            gos->numVertices.push_back(mesh.vertices.size());
+            gos->numIndices.push_back(mesh.indices.size());
+            gos->numTextures.push_back(mesh.textures.size());
 
-            gos->indices.insert(gos->indices.end(), m.meshes[i].indices.begin(),
-                                m.meshes[i].indices.end());
+            gos->vertices.insert(gos->vertices.end(), mesh.vertices.begin(),
+                                 mesh.vertices.end());
 
-            gos->textures.insert(gos->textures.end(),
-                                 m.meshes[i].textures.begin(),
-                                 m.meshes[i].textures.end());
-            aabbs.push_back(m.meshes[i].boundingBox);
+            gos->indices.insert(gos->indices.end(), mesh.indices.begin(),
+                                mesh.indices.end());
+
+            gos->textures.insert(gos->textures.end(), mesh.textures.begin(),
+                                 mesh.textures.end());
+
+            aabbs.push_back(mesh.boundingBox);
         }
+
+        storedModelData.vSize = totalVertices;
+        storedModelData.iSize = totalIndices;
 
         // World placement data
         gos->modelMatrices.push_back({glm::mat4(1.0f)});
@@ -123,21 +134,17 @@ glm::mat4 aabbModelMatrix(const BoundingBox &bbox)
 // NOTE: If we need, we can store this world AABB, per object for quicker access
 BoundingBox EntityManager::GetAABBWorld(const Render3DComponent &g)
 {
-    BoundingBox box = defaultBoundingBoxes[g.modelIndex];
+    return GetAABBWorld(g.modelIndex, g.instanceIndex);
+}
+
+BoundingBox EntityManager::GetAABBWorld(const uint32_t &modelIndex,
+                                        const uint32_t instanceIndex)
+{
+    BoundingBox box = defaultBoundingBoxes[modelIndex];
     glm::mat4 model =
-        EntityManager::gameObjects.modelMatrices[g.modelIndex][g.instanceIndex];
+        EntityManager::gameObjects.modelMatrices[modelIndex][instanceIndex];
 
     box = transformBoundingBox(box, model);
-
-    /*
-      glm::vec4 worldMin = model * glm::vec4(box.mMin, 1.0f); // point
-      glm::vec4 worldMax = model * glm::vec4(box.mMax, 1.0f); // point
-
-      BoundingBox result = {glm::vec3(worldMin.x, worldMin.y, worldMin.z),
-                            glm::vec3(worldMax.x, worldMax.y, worldMax.z)};
-
-      return result;
-      */
     return box;
 }
 
@@ -155,7 +162,7 @@ void createTransformMatrix(glm::mat4 &transform, glm::vec3 const &move,
     transform = glm::scale(transform, scale);
 }
 
-void EntityManager::TransformModel(Render3DComponent go, glm::vec3 move,
+void EntityManager::TransformModel(Render3DComponent &go, glm::vec3 move,
                                    glm::vec3 rotation, glm::vec3 scale)
 {
     if (go.id < MAX_GAME_OBJECTS && go.id < nextInstanceID)
@@ -225,4 +232,19 @@ uint16_t EntityManager::GetFlags(Render3DComponent go, uint16_t flags)
 {
     return EntityManager::gameObjects.flags[go.modelIndex][go.instanceIndex] &
            flags;
+}
+
+bool EntityManager::HasFlags(const Render3DComponent &go, const uint16_t &flags)
+{
+    return HasFlags(go.modelIndex, go.instanceIndex, flags);
+}
+
+bool EntityManager::HasFlags(const uint32_t &modelIndex,
+                             const uint32_t &instanceIndex,
+                             const uint16_t &flags)
+{
+    uint16_t currentFlags =
+        EntityManager::gameObjects.flags[modelIndex][instanceIndex];
+
+    return (currentFlags) & (flags) == flags;
 }

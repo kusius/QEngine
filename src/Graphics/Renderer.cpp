@@ -132,19 +132,6 @@ void Renderer::BeginFrame(const Camera &camera)
     unicolorShader->SetMatrix4("projection", camera.GetProjectionMatrix());
 }
 
-void Renderer::DrawShape(TransformComponent transform, ShapeComponent shape,
-                         RenderableComponent renderable)
-{
-    switch (shape.Shape)
-    {
-    case CUBE:
-        DrawCube(transform.Position, transform.Scale, 0.0f, renderable.Color);
-        break;
-    default:
-        break;
-    };
-}
-
 void Renderer::DrawCube(Texture2D &diffuseMap, Texture2D &specularMap,
                         Texture2D &emissionMap, glm::vec3 translation,
                         glm::vec2 scale, GLfloat rotation, GLboolean isSelected)
@@ -227,11 +214,12 @@ void Renderer::DrawBoundingBox(const BoundingBox &bbox, GLboolean wireframe)
         glm::vec3(bbox.mMax.x - bbox.mMin.x, bbox.mMax.y - bbox.mMin.y,
                   bbox.mMax.z - bbox.mMin.z);
     // 2. calculate center (position)
+    // rotation is always zero (axis aligned)
     glm::vec3 center = glm::vec3((bbox.mMin.x + bbox.mMax.x) / 2,
                                  (bbox.mMin.y + bbox.mMax.y) / 2,
                                  (bbox.mMin.z + bbox.mMax.z) / 2);
 
-    // 3. rotation is always zero (axis aligned)
+    // 3. Draw
     if (wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     DrawCube(center, scale, 0.0f, glm::vec3(1.0f));
@@ -270,7 +258,6 @@ void Renderer::DrawPointLights(glm::vec3 scale, GLfloat rotation,
 
 void Renderer::DrawSprite(Texture2D &texture)
 {
-    glActiveTexture(GL_TEXTURE0);
     texture.Bind();
 
     this->shader->Use();
@@ -279,39 +266,40 @@ void Renderer::DrawSprite(Texture2D &texture)
     glBindVertexArray(this->cubeVAO);
     // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
     glDrawArrays(GL_TRIANGLES, 0, 36);
-    // glBindVertexArray(0);//no need to unbind every time but whaduheck
+    glBindVertexArray(0);
+    glActiveTexture(GL_TEXTURE0);
 }
 
 void Renderer::DrawGameObjects()
 {
     glBindVertexArray(mVAO);
-    GameObjects *gos          = &(EntityManager::gameObjects);
-    unsigned int meshIndex    = 0;
-    unsigned int textureIndex = 0;
-    unsigned int baseIndex    = 0;
-    unsigned int baseVertex   = 0;
+    const GameObjects *gos     = &(EntityManager::gameObjects);
+    unsigned int meshIndex     = 0;
+    unsigned int textureOffset = 0;
+    unsigned int baseIndex     = 0;
+    unsigned int baseVertex    = 0;
 
     // TODO: Draw instances with glDraw*Instanced (?)
-    for (unsigned int i = 0; i < EntityManager::gameObjects.numMeshes.size();
-         i++)
+    for (unsigned int i = 0; i < gos->numMeshes.size(); i++)
     {
         // Draw each mesh of this object
-        unsigned int numMeshes = gos->numMeshes[i];
+        const unsigned int numMeshes = gos->numMeshes[i];
 
         for (unsigned int j = 0; j < numMeshes; j++)
         {
-            // Bind the appropriate textures for this mesh
-            bindTextures(gos->numTextures[meshIndex], gos->textures,
-                         textureIndex);
+            bindTextures(gos->textures, textureOffset,
+                         gos->numTextures[meshIndex]);
 
-            unsigned int numIndices = gos->numIndices[meshIndex];
+            textureOffset += gos->numTextures[meshIndex];
+
+            const unsigned int numIndices = gos->numIndices[meshIndex];
 
             for (unsigned int instance = 0;
                  instance < gos->modelMatrices[i].size(); instance++)
             {
                 shader->Use();
                 shader->SetMatrix4("model", gos->modelMatrices[i][instance]);
-                if ((gos->flags[i][instance] & FLAG_SELECTED) &&
+                if (EntityManager::HasFlags(i, instance, FLAG_SELECTED) &&
                     highlightShader)
                 {
                     glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -350,20 +338,44 @@ void Renderer::DrawGameObjects()
     glActiveTexture(GL_TEXTURE0);
 }
 
-inline void Renderer::bindTextures(unsigned int numTextures,
-                                   const std::vector<Texture> &textures,
-                                   unsigned int &textureIndex)
+void Renderer::DrawBoundingBoxes()
+{
+    const GameObjects *gos = &(EntityManager::gameObjects);
+    unsigned int meshIndex = 0;
+
+    for (unsigned int i = 0; i < gos->numMeshes.size(); i++)
+    {
+        // Draw each mesh of this object
+        const unsigned int numMeshes = gos->numMeshes[i];
+
+        for (unsigned int j = 0; j < numMeshes; j++)
+        {
+            for (unsigned int instance = 0;
+                 instance < gos->modelMatrices[i].size(); instance++)
+            {
+                DrawBoundingBox(
+                    EntityManager::GetAABBWorld(meshIndex, instance), GL_TRUE);
+            }
+
+            meshIndex++;
+        }
+    }
+}
+
+inline void Renderer::bindTextures(const std::vector<Texture> &textures,
+                                   const uint32_t startIndex,
+                                   const uint32_t textureCount)
 {
     unsigned int diffuseNr  = 1;
     unsigned int specularNr = 1;
     unsigned int emissionNr = 1;
     unsigned int normalNr   = 1;
 
-    for (unsigned int k = 0; k < numTextures; k++)
+    for (uint32_t i = 0; i < textureCount; i++)
     {
-        glActiveTexture(GL_TEXTURE0 + k);
+        glActiveTexture(GL_TEXTURE0 + i);
         string number;
-        string name = textures[textureIndex].type;
+        string name = textures[startIndex + i].type;
         if (name == "texture_diffuse")
             number = std::to_string(diffuseNr++);
         else if (name == "texture_specular")
@@ -374,18 +386,17 @@ inline void Renderer::bindTextures(unsigned int numTextures,
             number = std::to_string(normalNr++);
 
         shader->Use();
-        shader->SetInteger(("material." + name + number).c_str(), k);
+        shader->SetInteger(("material." + name + number).c_str(), i);
         shader->SetFloat("material.shininess", 32.0f);
-        glBindTexture(GL_TEXTURE_2D, textures[textureIndex].id);
-        textureIndex++;
+        glBindTexture(GL_TEXTURE_2D, textures[i].id);
     }
     glActiveTexture(GL_TEXTURE0);
 }
 
 void Renderer::SetupShaderData()
 {
-    unsigned int numVertices = EntityManager::gameObjects.vertices.size();
-    unsigned int numIndices  = EntityManager::gameObjects.indices.size();
+    size_t numVertices = EntityManager::gameObjects.vertices.size();
+    size_t numIndices  = EntityManager::gameObjects.indices.size();
     if (numVertices == 0 || numIndices == 0)
         return;
 

@@ -26,6 +26,12 @@ struct Terrain
     glm::vec3 position;
 };
 
+struct StoredModelData
+{
+    uint32_t vIndex, vSize;
+    uint32_t iIndex, iSize;
+};
+
 // SOA used to store GameObjects
 struct GameObjects
 {

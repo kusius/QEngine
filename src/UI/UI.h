@@ -19,8 +19,7 @@ namespace EditorUI
 struct GameData
 {
     std::vector<Render3DComponent> *gameObjects;
-    entt::basic_view<entt::entity, entt::exclude_t<>, const Render3DComponent>
-        *eView;
+    entt::registry *registry;
     entt::entity closestRaycastEntity;
     int closestRaycastIndex;
     glm::mat4 *view, *projection;

@@ -59,13 +59,219 @@ void EditorUI::ShaderEditorSaveFile(const char *file, std::string &textToSave)
     t.close();
 }
 
-void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
+void makeShaderEditor(bool &uiWindow, bool &hasChanges)
 {
     auto cpos   = editor.GetCursorPosition();
     ImGuiIO &io = ImGui::GetIO();
+    if (ImGui::Begin("Shader Editor", nullptr,
+                     ImGuiWindowFlags_HorizontalScrollbar |
+                         ImGuiWindowFlags_MenuBar))
+    {
+        ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+
+        if (io.KeyCtrl && io.KeysDown[GLFW_KEY_S])
+        {
+            std::string textToSave = editor.GetText();
+            EditorUI::ShaderEditorSaveFile(currentFile.c_str(), textToSave);
+            hasChanges = true;
+        }
+
+        if (ImGui::BeginMenuBar())
+        {
+            bool ro = editor.IsReadOnly();
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem("Save") ||
+                    (io.KeyCtrl && io.KeysDown[GLFW_KEY_S]))
+                {
+                    std::string textToSave = editor.GetText();
+                    EditorUI::ShaderEditorSaveFile(currentFile.c_str(),
+                                                   textToSave);
+                    hasChanges = true;
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Edit"))
+            {
+
+                if (ImGui::MenuItem("Read-only mode", nullptr, &ro))
+                    editor.SetReadOnly(ro);
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr,
+                                    !ro && editor.CanUndo()))
+                    editor.Undo();
+                if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr,
+                                    !ro && editor.CanRedo()))
+                    editor.Redo();
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Copy", "Ctrl-C", nullptr,
+                                    editor.HasSelection()))
+                    editor.Copy();
+                if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr,
+                                    !ro && editor.HasSelection()))
+                    editor.Cut();
+                if (ImGui::MenuItem("Delete", "Del", nullptr,
+                                    !ro && editor.HasSelection()))
+                    editor.Delete();
+                if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr,
+                                    !ro &&
+                                        ImGui::GetClipboardText() != nullptr))
+                    editor.Paste();
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Select all", nullptr, nullptr))
+                    editor.SetSelection(
+                        TextEditor::Coordinates(),
+                        TextEditor::Coordinates(editor.GetTotalLines(), 0));
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("View"))
+            {
+                if (ImGui::MenuItem("Dark palette"))
+                    editor.SetPalette(TextEditor::GetDarkPalette());
+                if (ImGui::MenuItem("Light palette"))
+                    editor.SetPalette(TextEditor::GetLightPalette());
+                if (ImGui::MenuItem("Retro blue palette"))
+                    editor.SetPalette(TextEditor::GetRetroBluePalette());
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::Button("Close"))
+                uiWindow = false;
+
+            ImGui::EndMenuBar();
+            ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | %s",
+                        cpos.mLine + 1, cpos.mColumn + 1,
+                        editor.GetTotalLines(),
+                        editor.IsOverwrite() ? "Ovr" : "Ins",
+                        editor.CanUndo() ? "*" : " ",
+                        editor.GetLanguageDefinition().mName.c_str(),
+                        currentFile.c_str());
+            editor.Render("ShaderEditor");
+        }
+    }
+    ImGui::End(); // Shader Editor
+}
+
+void makeDebugCounters()
+{
+    if (ImGui::Begin("Debug counters", nullptr, 0))
+    {
+        ImGui::SetWindowSize(ImVec2(400, 600), ImGuiCond_FirstUseEver);
+        for (unsigned int i = 0; i < NumRegions; i++)
+        {
+            ImGui::LabelText(DebugRegionStrings[i], "%.3f ms",
+                             TicksToMilliseconds(AvgCycles[i]));
+        }
+    }
+    ImGui::End(); // Debug Counters
+}
+
+void makeEntityBrowser(EditorUI::GameData &gameData,
+                       entt::basic_view<entt::entity, entt::exclude_t<>,
+                                        const Render3DComponent> &eView)
+{
+    ImGuiIO &io = ImGui::GetIO();
+    if (ImGui::Begin("Entity Browser", nullptr, 0))
+    {
+        const entt::entity previousSelection = selectedGameObjectIndex;
+        bool hasListSelection                = false;
+        for (auto [entity, gameObject] : eView.each())
+        {
+            string name =
+                string("(" + to_string(gameObject.id) + ") " + gameObject.name);
+            // See if there is a selection from the selectable list
+            // if same item is selected act as toggle.
+            if (ImGui::Selectable(name.c_str(),
+                                  selectedGameObjectIndex == entity))
+            {
+                hasListSelection = true;
+                if (previousSelection != entity)
+                {
+                    selectedGameObjectIndex = entity;
+                    if (previousSelection != entt::null)
+                    {
+                        auto &component = eView.get<const Render3DComponent>(
+                            previousSelection);
+
+                        EntityManager::UnsetFlags(component, FLAG_SELECTED);
+                    }
+                    EntityManager::SetFlags(gameObject, FLAG_SELECTED);
+                }
+                else if (previousSelection == entity &&
+                         previousSelection != entt::null)
+                {
+                    selectedGameObjectIndex = entt::null;
+                    auto &component =
+                        eView.get<const Render3DComponent>(previousSelection);
+                    EntityManager::UnsetFlags(component, FLAG_SELECTED);
+                }
+            }
+        }
+
+        // Only process raycast selection if we aren't interacting with
+        // Editor UI
+        if (!io.WantCaptureMouse)
+        {
+            if (gameData.closestRaycastEntity != entt::null)
+            {
+                if (previousSelection != entt::null)
+                {
+                    auto &component =
+                        eView.get<const Render3DComponent>(previousSelection);
+                    EntityManager::UnsetFlags(component, FLAG_SELECTED);
+                }
+                auto &component = eView.get<const Render3DComponent>(
+                    gameData.closestRaycastEntity);
+                EntityManager::SetFlags(component, FLAG_SELECTED);
+                selectedGameObjectIndex = gameData.closestRaycastEntity;
+            }
+        }
+
+        // Make the closestRaycastIndex as processed (invalidate)
+        gameData.closestRaycastEntity = entt::null;
+    }
+    ImGui::End(); // EntityBrowser
+}
+
+void makeTransformGuizmo(EditorUI::GameData &gameData,
+                         entt::basic_view<entt::entity, entt::exclude_t<>,
+                                          const Render3DComponent> &eView)
+{
+    if (selectedGameObjectIndex != entt::null)
+    {
+        Render3DComponent g =
+            eView.get<const Render3DComponent>(selectedGameObjectIndex);
+
+        glm::mat4 *matrix =
+            &(EntityManager::gameObjects
+                  .modelMatrices[g.modelIndex][g.instanceIndex]);
+
+        ImGuizmo::BeginFrame();
+        ImGui::Begin("Editor");
+        if (ImGui::RadioButton("Draw AABBs", gameData.bRenderBoundingBoxes))
+            gameData.bRenderBoundingBoxes = !gameData.bRenderBoundingBoxes;
+
+        ImGuizmo::SetID(0);
+        EditorUI::EditTransform(glm::value_ptr(*gameData.view),
+                                glm::value_ptr(*gameData.projection),
+                                (float *)matrix);
+        ImGui::End(); // Transform Guizmo
+    }
+}
+
+void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
+{
+    auto eView  = gameData.registry->view<const Render3DComponent>();
+    ImGuiIO &io = ImGui::GetIO();
     if (ImGui::BeginMainMenuBar())
     {
-
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)",
                     1000.0f / io.Framerate, io.Framerate);
         ImGui::EndMainMenuBar();
@@ -73,199 +279,10 @@ void EditorUI::Update(bool &uiWindow, bool &hasChanges, GameData &gameData)
 #ifdef QDEBUG
     if (uiWindow)
     {
-        if (ImGui::Begin("Shader Editor", nullptr,
-                         ImGuiWindowFlags_HorizontalScrollbar |
-                             ImGuiWindowFlags_MenuBar))
-        {
-            ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
-
-            if (io.KeyCtrl && io.KeysDown[GLFW_KEY_S])
-            {
-                std::string textToSave = editor.GetText();
-                EditorUI::ShaderEditorSaveFile(currentFile.c_str(), textToSave);
-                hasChanges = true;
-            }
-
-            if (ImGui::BeginMenuBar())
-            {
-                bool ro = editor.IsReadOnly();
-                if (ImGui::BeginMenu("File"))
-                {
-                    if (ImGui::MenuItem("Save") ||
-                        (io.KeyCtrl && io.KeysDown[GLFW_KEY_S]))
-                    {
-                        std::string textToSave = editor.GetText();
-                        EditorUI::ShaderEditorSaveFile(currentFile.c_str(),
-                                                       textToSave);
-                        hasChanges = true;
-                    }
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Edit"))
-                {
-
-                    if (ImGui::MenuItem("Read-only mode", nullptr, &ro))
-                        editor.SetReadOnly(ro);
-                    ImGui::Separator();
-
-                    if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr,
-                                        !ro && editor.CanUndo()))
-                        editor.Undo();
-                    if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr,
-                                        !ro && editor.CanRedo()))
-                        editor.Redo();
-
-                    ImGui::Separator();
-
-                    if (ImGui::MenuItem("Copy", "Ctrl-C", nullptr,
-                                        editor.HasSelection()))
-                        editor.Copy();
-                    if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr,
-                                        !ro && editor.HasSelection()))
-                        editor.Cut();
-                    if (ImGui::MenuItem("Delete", "Del", nullptr,
-                                        !ro && editor.HasSelection()))
-                        editor.Delete();
-                    if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr,
-                                        !ro && ImGui::GetClipboardText() !=
-                                                   nullptr))
-                        editor.Paste();
-
-                    ImGui::Separator();
-
-                    if (ImGui::MenuItem("Select all", nullptr, nullptr))
-                        editor.SetSelection(
-                            TextEditor::Coordinates(),
-                            TextEditor::Coordinates(editor.GetTotalLines(), 0));
-
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("View"))
-                {
-                    if (ImGui::MenuItem("Dark palette"))
-                        editor.SetPalette(TextEditor::GetDarkPalette());
-                    if (ImGui::MenuItem("Light palette"))
-                        editor.SetPalette(TextEditor::GetLightPalette());
-                    if (ImGui::MenuItem("Retro blue palette"))
-                        editor.SetPalette(TextEditor::GetRetroBluePalette());
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::Button("Close"))
-                    uiWindow = false;
-
-                ImGui::EndMenuBar();
-                ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | %s",
-                            cpos.mLine + 1, cpos.mColumn + 1,
-                            editor.GetTotalLines(),
-                            editor.IsOverwrite() ? "Ovr" : "Ins",
-                            editor.CanUndo() ? "*" : " ",
-                            editor.GetLanguageDefinition().mName.c_str(),
-                            currentFile.c_str());
-                editor.Render("ShaderEditor");
-            }
-        }
-        ImGui::End(); // Shader Editor
-
-        if (ImGui::Begin("Debug counters", nullptr, 0))
-        {
-            ImGui::SetWindowSize(ImVec2(400, 600), ImGuiCond_FirstUseEver);
-            for (unsigned int i = 0; i < NumRegions; i++)
-            {
-                ImGui::LabelText(DebugRegionStrings[i], "%.3f ms",
-                                 TicksToMilliseconds(AvgCycles[i]));
-            }
-        }
-        ImGui::End(); // Debug Counters
-
-        auto eView = gameData.eView;
-        if (ImGui::Begin("Entity Browser", nullptr, 0))
-        {
-            const entt::entity previousSelection = selectedGameObjectIndex;
-            bool hasListSelection                = false;
-            for (auto [entity, gameObject] : eView->each())
-            {
-                string name = string("(" + to_string(gameObject.id) + ") " +
-                                     gameObject.name);
-                // See if there is a selection from the selectable list
-                // if same item is selected act as toggle.
-                if (ImGui::Selectable(name.c_str(),
-                                      selectedGameObjectIndex == entity))
-                {
-                    hasListSelection = true;
-                    if (previousSelection != entity)
-                    {
-                        selectedGameObjectIndex = entity;
-                        if (previousSelection != entt::null)
-                        {
-                            auto &component =
-                                eView->get<const Render3DComponent>(
-                                    previousSelection);
-
-                            EntityManager::UnsetFlags(component, FLAG_SELECTED);
-                        }
-                        EntityManager::SetFlags(gameObject, FLAG_SELECTED);
-                    }
-                    else if (previousSelection == entity &&
-                             previousSelection != entt::null)
-                    {
-                        selectedGameObjectIndex = entt::null;
-                        auto &component = eView->get<const Render3DComponent>(
-                            previousSelection);
-                        EntityManager::UnsetFlags(component, FLAG_SELECTED);
-                    }
-                }
-            }
-
-            // Only process raycast selection if we aren't interacting with
-            // Editor UI
-            if (!io.WantCaptureMouse)
-            {
-                if (!gameData.gameObjects->empty() &&
-                    gameData.closestRaycastIndex >= 0)
-                {
-                    if (previousSelection != entt::null)
-                    {
-                        auto &component = eView->get<const Render3DComponent>(
-                            previousSelection);
-                        EntityManager::UnsetFlags(component, FLAG_SELECTED);
-                    }
-                    EntityManager::SetFlags(
-                        gameData.gameObjects->at(gameData.closestRaycastIndex),
-                        FLAG_SELECTED);
-                    selectedGameObjectIndex = gameData.closestRaycastEntity;
-                }
-            }
-
-            // Make the closestRaycastIndex as processed (invalidate)
-            gameData.closestRaycastIndex = -1;
-        }
-        ImGui::End(); // EntityBrowser
-
-        if (selectedGameObjectIndex != entt::null)
-        {
-            Render3DComponent g =
-                eView->get<const Render3DComponent>(selectedGameObjectIndex);
-            {
-                glm::mat4 *matrix =
-                    &(EntityManager::gameObjects
-                          .modelMatrices[g.modelIndex][g.instanceIndex]);
-
-                ImGuizmo::BeginFrame();
-                ImGui::Begin("Editor");
-                if (ImGui::RadioButton("Draw AABBs",
-                                       gameData.bRenderBoundingBoxes))
-                    gameData.bRenderBoundingBoxes =
-                        !gameData.bRenderBoundingBoxes;
-
-                ImGuizmo::SetID(0);
-                EditTransform(glm::value_ptr(*gameData.view),
-                              glm::value_ptr(*gameData.projection),
-                              (float *)matrix);
-            }
-            ImGui::End(); // Transform Guizmo
-        }
+        makeShaderEditor(uiWindow, hasChanges);
+        makeDebugCounters();
+        makeEntityBrowser(gameData, eView);
+        makeTransformGuizmo(gameData, eView);
     }
 #endif
     ImGui::Render();

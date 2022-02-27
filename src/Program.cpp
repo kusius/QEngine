@@ -22,6 +22,7 @@ enum WindowMode
     WINDOWED,
 };
 
+// Function forward declarations
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action,
                  int mode);
 void MouseCallback(GLFWwindow *window, double xpos, double ypos);
@@ -30,10 +31,12 @@ void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
 void ProcessInput(GLFWwindow *window, float deltaTime, Renderer *renderer);
 
+// World and game data
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 std::vector<Render3DComponent> gameObjects = {};
 glm::mat4 projection                       = glm::mat4(1);
 EditorUI::GameData gameDataForEditor;
+entt::registry registry;
 Game game;
 
 // Video properties
@@ -163,41 +166,35 @@ void PrintLibVersions()
     std::cout << "GLFW: " << major << "." << minor << "rev" << rev << std::endl;
 }
 
-int SelectClosestObject(double mousex, double mousey, int width, int height,
-                        std::vector<Render3DComponent> *gameObjects)
+entt::entity SelectClosestObject(double mousex, double mousey, int width,
+                                 int height, entt::registry &registry)
 {
     float minDistance = std::numeric_limits<float>::max();
     float distance;
-    int closest = -1;
+    entt::entity closest = entt::null;
+    auto eView           = registry.view<const Render3DComponent>();
     // Ray starting from camera in world coordinates
     Ray rayWorld = camera.mouseposToRayWorld(mousex, mousey, width, height);
 
-    for (int i = 0; i < gameObjects->size(); i++)
+    for (auto entity : eView)
     {
-        int modelIndex    = gameObjects->at(i).modelIndex;
-        int instanceIndex = gameObjects->at(i).instanceIndex;
+        auto &gameObject  = eView.get<const Render3DComponent>(entity);
+        int modelIndex    = gameObject.modelIndex;
+        int instanceIndex = gameObject.instanceIndex;
         // Bounding box in world coordinates
-        BoundingBox box = EntityManager::GetAABBWorld(gameObjects->at(i));
+        BoundingBox box = EntityManager::GetAABBWorld(gameObject);
 
         if (camera.rayAABBIntersection(box.mMin, box.mMax, rayWorld, nullptr))
         {
-
             float d1 = glm::distance(rayWorld.o, box.mMin);
             float d2 = glm::distance(rayWorld.o, box.mMax);
             distance = glm::min(d1, d2);
             if (distance < minDistance)
             {
-                closest     = i;
+                closest     = entity;
                 minDistance = distance;
             }
         }
-        // No intersection, unmark object if it was marked previously
-        else if (gameObjects->at(i).rayCastSelected)
-            gameObjects->at(i).rayCastSelected = false;
-
-        // If we found any, mark it
-        if (closest >= 0)
-            gameObjects->at(closest).rayCastSelected = true;
     }
     return closest;
 }
@@ -253,14 +250,12 @@ int main(int argc, char **argv)
     double startFrameTime = 0.0;
     double endFrameTime   = 0.0;
 
-    entt::registry registry;
     game.MakeLevel(renderer, registry);
 
-    auto eView                   = registry.view<const Render3DComponent>();
-    gameDataForEditor            = {&gameObjects, 0};
-    gameDataForEditor.eView      = &eView;
-    gameDataForEditor.view       = &view;
-    gameDataForEditor.projection = &projection;
+    gameDataForEditor                      = {&gameObjects, 0};
+    gameDataForEditor.registry             = &registry;
+    gameDataForEditor.view                 = &view;
+    gameDataForEditor.projection           = &projection;
     gameDataForEditor.bRenderBoundingBoxes = false;
 
     EditorUI::SetupContext(window);
@@ -273,7 +268,7 @@ int main(int argc, char **argv)
 #ifdef QDEBUG
     InitDebug();
 #endif
-
+    auto renderables = registry.view<const Render3DComponent>();
     while (!glfwWindowShouldClose(window))
     {
         BEGIN_DEBUG_REGION(MainLoop);
@@ -312,7 +307,8 @@ int main(int argc, char **argv)
 
         renderer->BeginFrame(camera);
         renderer->DrawGameObjects();
-        renderer->DrawPointLights(glm::vec3(0.2f), 0.0f, glm::vec3(1.0f));
+        renderer->DrawPointLights(glm::vec3(0.2f), 0.0f,
+                                  glm::vec3(1.0f, 0.0f, 0.0f));
 
         // auto eView =
         //     registry.view<const TransformComponent, const ShapeComponent,
@@ -325,12 +321,13 @@ int main(int argc, char **argv)
 #ifdef QDEBUG
         if (gameDataForEditor.bRenderBoundingBoxes)
         {
-            for (int i = 0; i < gameObjects.size(); ++i)
-            {
-                Render3DComponent g = gameObjects.at(i);
-                renderer->DrawBoundingBox(EntityManager::GetAABBWorld(g),
-                                          GL_TRUE);
-            }
+            // for (int i = 0; i < gameObjects.size(); ++i)
+            // {
+            //     Render3DComponent g = gameObjects.at(i);
+            //     renderer->DrawBoundingBox(EntityManager::GetAABBWorld(g),
+            //                               GL_TRUE);
+            // }
+            renderer->DrawBoundingBoxes();
         }
 #endif
         EditorUI::Render();
@@ -361,8 +358,8 @@ void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods)
     {
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
-        gameDataForEditor.closestRaycastIndex = SelectClosestObject(
-            xpos, ypos, screenWidth, screenHeight, &gameObjects);
+        gameDataForEditor.closestRaycastEntity = SelectClosestObject(
+            xpos, ypos, screenWidth, screenHeight, registry);
     }
 }
 

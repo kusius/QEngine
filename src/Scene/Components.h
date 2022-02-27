@@ -37,6 +37,7 @@ struct Render3DComponent
     std::string name; // friendly name given on creation
     std::string
         path; // the path of the descriptor file for the object (.gltf etc.)
+
     unsigned int id;
     unsigned int modelIndex;
     unsigned int instanceIndex;

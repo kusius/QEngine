@@ -30,7 +30,7 @@ class EntityManager
      * the unique ID for that gameobject
      */
     static Render3DComponent ImportModelFromFile(const char *path,
-                                          const char *name = "unnamed");
+                                                 const char *name = "unnamed");
     /**
      * @brief Take a texture directory and import specified amount of tiles
      * (quads) as terrain. By default placed in non-overlapping way around world
@@ -55,8 +55,7 @@ class EntityManager
      * @param scale the amount to scale as a percentage of the original scale
      * in x, y, z
      */
-    static void TransformModel(Render3DComponent go,
-                               glm::vec3 position = glm::vec3(0.0),
+    static void TransformModel(Render3DComponent &go, glm::vec3 move,
                                glm::vec3 rotation = glm::vec3(0.0),
                                glm::vec3 scale    = glm::vec3(1.0));
 
@@ -76,8 +75,14 @@ class EntityManager
     static void UnsetFlags(Render3DComponent go, uint16_t flags);
     // Get a gameobject's flags
     static uint16_t GetFlags(Render3DComponent go, uint16_t flags);
+    // Check if a gameobject has the given flags
+    static bool HasFlags(const Render3DComponent &go, const uint16_t &flags);
+    static bool HasFlags(const uint32_t &modelIndex,
+                         const uint32_t &instanceIndex, const uint16_t &flags);
     // Get a gameobject's bounding box in world coordinates
     static BoundingBox GetAABBWorld(const Render3DComponent &g);
+    static BoundingBox GetAABBWorld(const uint32_t &modelIndex,
+                                    const uint32_t instanceIndex);
 
   private:
     EntityManager(){};

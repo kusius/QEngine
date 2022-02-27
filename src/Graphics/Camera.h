@@ -201,7 +201,7 @@ class Camera
             tmax = glm::min(tmax, glm::max(t1, t2));
         }
 
-        return tmax > glm::max(tmin, 0.0f);
+        return tmax >= glm::max(tmin, 0.0f);
     }
 
     Ray mouseposToRayWorld(double xpos, double ypos, int width, int height)

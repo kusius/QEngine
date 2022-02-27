@@ -73,7 +73,11 @@
         "stack": "cpp",
         "bit": "cpp",
         "clocale": "cpp",
-        "deque": "cpp"
+        "deque": "cpp",
+        "charconv": "cpp",
+        "format": "cpp",
+        "forward_list": "cpp",
+        "optional": "cpp"
     },
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "editor.renderIndentGuides": false,

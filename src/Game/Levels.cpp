@@ -17,6 +17,7 @@ void Game::placeLevelTiles(const std::vector<std::vector<TILE_TYPE>> &level,
     glm::vec3 position = {0.0f, 0.0f, 0.0f};
     float offset       = 0.5f;
     string tilePath    = "";
+
     for (auto row : level)
     {
         for (TILE_TYPE tile : row)

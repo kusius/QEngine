@@ -17,6 +17,7 @@
 #include <Thirdparty/glad/glad.h>
 #include <Thirdparty/glm/glm.hpp>
 #include <Thirdparty/glm/gtc/matrix_transform.hpp>
+#include <Thirdparty/entt/entt.hpp>
 #include <Graphics/Model.h>
 #include <Objects/GameObjects.h>
 #include <Graphics/Shader.h>
@@ -75,6 +76,8 @@ class Renderer
     Shader *highlightShader;
     Shader *unicolorShader;
 
+    void DrawBoundingBoxes();
+
   protected:
     /**
      * @brief Bind the texture uniforms needed for our gameObject.frag fragment
@@ -82,13 +85,11 @@ class Renderer
      *
      * @param numTextures how many textures to bind to our shader
      * @param textures the array from which to draw the Texture objects
-     * @param textureIndex (in/out) an index to use for the array (we increment
-     * it inside this function). This is in case the calling code has a running
-     * index for the textures array.
+     * @param textureCount how many textures of the given array to bind
      */
-    inline void bindTextures(unsigned int numTextures,
-                             const std::vector<Texture> &textures,
-                             unsigned int &textureIndex);
+    inline void bindTextures(const std::vector<Texture> &textures,
+                             const uint32_t startIndex,
+                             const uint32_t textureCount);
 
   private:
     GLuint cubeVAO;
