@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<material>
+	<technique name="Techniques/DiffNormalSpec.xml" />
+	<texture unit="diffuse" name="Textures/material_diffuse.png" />
+	<texture unit="normal" name="Textures/material_normal.png" />
+	<texture unit="specular" name="Textures/material_specularGlossiness.png" />
+	<texture unit="emissive" name="Textures/material_occlusion.png" />
+	<parameter name="MatDiffColor" value="1 1 1 1" />
+	<parameter name="MatSpecColor" value="1 1 1 1000" />
+	<parameter name="MatEmissiveColor" value="0 0 0 1" />
+	<cull value="none" />
+	<shadowcull value="none" />
+</material>

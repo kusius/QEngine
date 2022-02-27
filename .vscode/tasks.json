@@ -14,7 +14,9 @@
             "options": {
                 "cwd": "${workspaceFolder}/build/debug/"
             },
-            "problemMatcher": []
+            "problemMatcher": [
+                "$msCompile"
+            ]
         },
         {
             "label": "nmake Release",
@@ -23,7 +25,8 @@
             "options": {
                 "cwd": "${workspaceFolder}/build/release/"
             },
-            "problemMatcher": []
+            "problemMatcher": [],
+            "group": "build"
         },
         {
             "group": "none",

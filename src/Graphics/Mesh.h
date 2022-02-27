@@ -14,31 +14,31 @@ using namespace std;
 
 struct BoundingBox
 {
-  glm::vec3 mMin;
-  glm::vec3 mMax;
+    glm::vec3 mMin;
+    glm::vec3 mMax;
 };
 
 class Mesh
 {
 
-public:
-  /*Mesh Data*/
-  vector<Vertex> vertices;
-  vector<unsigned int> indices;
-  vector<Texture> textures;
-  BoundingBox boundingBox;
-  /*Functions*/
-  Mesh(vector<Vertex> vertices, vector<unsigned int> indices,
-       vector<Texture> textures, BoundingBox boundingBox);
-  void Draw(Shader *shader, Shader *highlightShader = nullptr);
-  /*Other data*/
-  GLboolean selected;
+  public:
+    /*Mesh Data*/
+    vector<Vertex> vertices;
+    vector<unsigned int> indices;
+    vector<Texture> textures;
+    BoundingBox boundingBox;
+    /*Functions*/
+    Mesh(vector<Vertex> vertices, vector<unsigned int> indices,
+         vector<Texture> textures, BoundingBox boundingBox);
+    void Draw(Shader *shader, Shader *highlightShader = nullptr);
+    /*Other data*/
+    GLboolean selected;
 
-private:
-  /*Render data*/
-  unsigned int VAO, VBO, EBO;
-  /*Functions*/
-  void setupMesh();
+  private:
+    /*Render data*/
+    unsigned int VAO, VBO, EBO;
+    /*Functions*/
+    void setupMesh();
 };
 
 #endif

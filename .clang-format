@@ -1,2 +1,5 @@
 BreakBeforeBraces: Allman
 SortIncludes: false
+AlignAfterOpenBracket: true
+AlignConsecutiveAssignments: true
+IndentWidth: 4
