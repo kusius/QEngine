@@ -23,7 +23,7 @@ std::map<string, unsigned int> EntityManager::loadedModels;
 static BoundingBox transformBoundingBox(const BoundingBox &bbox,
                                         const glm::mat4 &transform);
 
-void EntityManager::Reset()
+void EntityManager::Clear()
 {
     nextInstanceID = 0;
     loadedModels.clear();
@@ -148,38 +148,89 @@ BoundingBox EntityManager::GetAABBWorld(const uint32_t &modelIndex,
     return box;
 }
 
-void createTransformMatrix(glm::mat4 &transform, glm::vec3 const &move,
-                           glm::vec3 const &rotation, glm::vec3 const &scale)
+glm::mat4 createTransformMatrix(const glm::vec3 &move,
+                                const glm::vec3 &rotation,
+                                const glm::vec3 &scale)
 {
-    transform = glm::mat4(1.0);
-    transform = glm::translate(transform, move);
-    transform = glm::rotate(transform, glm::radians(rotation.x),
+    glm::mat4 transform = glm::mat4(1.0);
+    transform           = glm::translate(transform, move);
+    transform           = glm::rotate(transform, glm::radians(rotation.x),
                             glm::vec3(1.0f, 0.0f, 0.0f));
-    transform = glm::rotate(transform, glm::radians(rotation.y),
+    transform           = glm::rotate(transform, glm::radians(rotation.y),
                             glm::vec3(0.0f, 1.0f, 0.0f));
-    transform = glm::rotate(transform, glm::radians(rotation.z),
+    transform           = glm::rotate(transform, glm::radians(rotation.z),
                             glm::vec3(0.0f, 0.0f, 1.0f));
-    transform = glm::scale(transform, scale);
+    transform           = glm::scale(transform, scale);
+    return transform;
 }
 
-void EntityManager::TransformModel(Render3DComponent &go, glm::vec3 move,
-                                   glm::vec3 rotation, glm::vec3 scale)
+void EntityManager::TransformModelLocal(const Render3DComponent &go,
+                                        glm::vec3 move, glm::vec3 rotation,
+                                        glm::vec3 scale)
 {
     if (go.id < MAX_GAME_OBJECTS && go.id < nextInstanceID)
     {
-        EntityManager::gameObjects.positions[go.modelIndex][go.instanceIndex] +=
-            move;
-        EntityManager::gameObjects.angles[go.modelIndex][go.instanceIndex] =
-            rotation;
-        EntityManager::gameObjects.scales[go.modelIndex][go.instanceIndex] =
-            scale;
-        glm::mat4 transform = glm::mat4(1.0);
+        glm::mat4 transform = createTransformMatrix(move, rotation, scale);
+        glm::mat4 *current =
+            &EntityManager::gameObjects
+                 .modelMatrices[go.modelIndex][go.instanceIndex];
 
-        createTransformMatrix(transform, move, rotation, scale);
-
-        EntityManager::gameObjects
-            .modelMatrices[go.modelIndex][go.instanceIndex] = transform;
+        *current = (*current) * transform;
     }
+}
+
+void EntityManager::TransformModelWorld(const Render3DComponent &go,
+                                        glm::vec3 move, glm::vec3 rotation,
+                                        glm::vec3 scale)
+{
+    glm::mat4 transform = createTransformMatrix(move, rotation, scale);
+    glm::mat4 *current  = &EntityManager::gameObjects
+                              .modelMatrices[go.modelIndex][go.instanceIndex];
+
+    *current = transform * (*current);
+}
+
+void EntityManager::RotateAroundAxis(const Render3DComponent &go,
+                                     const glm::vec3 &axis, const float degrees)
+{
+    glm::mat4 transform = glm::mat4(1.0f);
+    transform           = glm::rotate(transform, glm::radians(degrees), axis);
+    glm::mat4 *current  = &EntityManager::gameObjects
+                              .modelMatrices[go.modelIndex][go.instanceIndex];
+    *current = transform * (*current);
+}
+
+glm::vec3 EntityManager::GetPosition(const Render3DComponent &go)
+{
+    return glm::vec3(EntityManager::gameObjects
+                         .modelMatrices[go.modelIndex][go.instanceIndex][3]);
+}
+
+glm::quat EntityManager::GetRotation(const Render3DComponent &go)
+{
+    glm::mat4 modelMatrix = EntityManager::gameObjects
+                                .modelMatrices[go.modelIndex][go.instanceIndex];
+    return glm::quat_cast(modelMatrix);
+}
+
+glm::vec3 EntityManager::GetScale(const Render3DComponent &go)
+{
+    glm::mat4 modelMatrix = EntityManager::gameObjects
+                                .modelMatrices[go.modelIndex][go.instanceIndex];
+    glm::vec3 scale = glm::vec3(0.0f);
+
+    for (int i = 0; i < 3; i++)
+        scale[i] = glm::length(glm::vec3(modelMatrix[i]));
+
+    return scale;
+}
+
+glm::vec3 EntityManager::GetForwardVector(const Render3DComponent &go)
+{
+    const glm::mat4 transformationMatrix =
+        gameObjects.modelMatrices[go.modelIndex][go.instanceIndex];
+    const glm::mat4 inverted = glm::inverse(transformationMatrix);
+    return normalize(glm::vec3(inverted[2]));
 }
 
 std::vector<glm::vec3> EntityManager::GetAABBVertices(const BoundingBox &bbox)

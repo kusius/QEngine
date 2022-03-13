@@ -6,7 +6,7 @@ void InputManager::StartUp() {}
 
 void InputManager::Clear() { key_states.clear(); }
 
-bool InputManager::ProcessKeyTap(GLFWwindow *window, int key_code)
+bool InputManager::isKeyTapped(GLFWwindow *window, int key_code)
 {
     bool ret = GL_FALSE;
     if (glfwGetKey(window, key_code) == GLFW_PRESS && !key_states[key_code])

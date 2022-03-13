@@ -9,7 +9,7 @@
 #include <Thirdparty/glad/glad.h>
 #include <Thirdparty/glfw/glfw3.h>
 #include <Thirdparty/entt/entt.hpp>
-#include <Game/Levels.h>
+#include <Game/Game.h>
 #include <UI/UI.h>
 
 #include <limits>
@@ -38,6 +38,7 @@ glm::mat4 projection                       = glm::mat4(1);
 EditorUI::GameData gameDataForEditor;
 entt::registry registry;
 Game game;
+Render3DComponent player;
 
 // Video properties
 static int targetRefreshRate;
@@ -174,7 +175,7 @@ entt::entity SelectClosestObject(double mousex, double mousey, int width,
     entt::entity closest = entt::null;
     auto eView           = registry.view<const Render3DComponent>();
     // Ray starting from camera in world coordinates
-    Ray rayWorld = camera.mouseposToRayWorld(mousex, mousey, width, height);
+    Ray rayWorld = camera.MouseposToRayWorld(mousex, mousey, width, height);
 
     for (auto entity : eView)
     {
@@ -184,7 +185,7 @@ entt::entity SelectClosestObject(double mousex, double mousey, int width,
         // Bounding box in world coordinates
         BoundingBox box = EntityManager::GetAABBWorld(gameObject);
 
-        if (camera.rayAABBIntersection(box.mMin, box.mMax, rayWorld, nullptr))
+        if (camera.RayAABBIntersection(box.mMin, box.mMax, rayWorld, nullptr))
         {
             float d1 = glm::distance(rayWorld.o, box.mMin);
             float d2 = glm::distance(rayWorld.o, box.mMax);
@@ -268,6 +269,9 @@ int main(int argc, char **argv)
 #ifdef QDEBUG
     InitDebug();
 #endif
+
+    player = registry.get<Render3DComponent>(game.GetPlayer());
+
     auto renderables = registry.view<const Render3DComponent>();
     while (!glfwWindowShouldClose(window))
     {
@@ -279,6 +283,21 @@ int main(int argc, char **argv)
         END_DEBUG_REGION(ProcessInput);
 
         BEGIN_DEBUG_REGION(UpdateWorldObjects);
+
+        glm::vec3 playerPosition = EntityManager::GetPosition(player);
+
+        camera.FollowPos(playerPosition);
+
+        glm::vec3 scale = EntityManager::GetScale(player);
+        scale.z         = -scale.z;
+        scale.y         = 0;
+
+        glm::vec3 centerPosition = playerPosition;
+
+        EntityManager::RotateAroundAxis(
+            player, centerPosition + glm::vec3(0.0f, 1.0f, 0.0f),
+            15 * deltaTime);
+
         projection = glm::perspective(glm::radians(camera.Zoom),
                                       (float)screenWidth / (float)screenHeight,
                                       0.1f, 100.0f);
@@ -310,23 +329,9 @@ int main(int argc, char **argv)
         renderer->DrawPointLights(glm::vec3(0.2f), 0.0f,
                                   glm::vec3(1.0f, 0.0f, 0.0f));
 
-        // auto eView =
-        //     registry.view<const TransformComponent, const ShapeComponent,
-        //                   const RenderableComponent>();
-        // for (auto [entity, transform, shape, renderable] : eView.each())
-        // {
-        //     lightRenderer->DrawShape(transform, shape, renderable);
-        // }
-
 #ifdef QDEBUG
         if (gameDataForEditor.bRenderBoundingBoxes)
         {
-            // for (int i = 0; i < gameObjects.size(); ++i)
-            // {
-            //     Render3DComponent g = gameObjects.at(i);
-            //     renderer->DrawBoundingBox(EntityManager::GetAABBWorld(g),
-            //                               GL_TRUE);
-            // }
             renderer->DrawBoundingBoxes();
         }
 #endif
@@ -353,7 +358,6 @@ int main(int argc, char **argv)
 
 void MouseButtonCallBack(GLFWwindow *window, int button, int action, int mods)
 {
-
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
         double xpos, ypos;
@@ -372,7 +376,7 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action,
         glfwSetWindowShouldClose(window, true);
 }
 
-inline bool ProcessKeyTap(int key_code, GLFWwindow *window)
+inline bool isKeyTapped(int key_code, GLFWwindow *window)
 {
     bool ret = false;
     if (key_code < 0)
@@ -390,9 +394,37 @@ inline bool ProcessKeyTap(int key_code, GLFWwindow *window)
     return ret;
 }
 
+void ProcessCameraInput(GLFWwindow *window, float deltaTime)
+{
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.ProcessKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.ProcessKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.ProcessKeyboard(RIGHT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+        camera.ProcessKeyboard(UP, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        camera.ProcessKeyboard(DOWN, deltaTime);
+}
+
+void ProcessPlayerInput(GLFWwindow *window, float deltaTime)
+{
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        game.ProcessKeyboard(FORWARD, deltaTime, registry);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        game.ProcessKeyboard(BACKWARD, deltaTime, registry);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        game.ProcessKeyboard(LEFT, deltaTime, registry);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        game.ProcessKeyboard(RIGHT, deltaTime, registry);
+}
+
 void ProcessInput(GLFWwindow *window, float deltaTime, Renderer *renderer)
 {
-    if (ProcessKeyTap(GLFW_KEY_ESCAPE, window))
+    if (isKeyTapped(GLFW_KEY_ESCAPE, window))
     {
         uiWindow = !uiWindow;
         if (uiWindow)
@@ -408,31 +440,22 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Renderer *renderer)
     }
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS &&
-        ProcessKeyTap(GLFW_KEY_ENTER, window))
+        isKeyTapped(GLFW_KEY_ENTER, window))
     {
         // TODO: Properly change between fullscreen and windowed mode
     }
 
     if (!uiWindow || !uiWindowFocused)
     {
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-            camera.ProcessKeyboard(FORWARD, deltaTime);
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-            camera.ProcessKeyboard(BACKWARD, deltaTime);
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-            camera.ProcessKeyboard(LEFT, deltaTime);
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-            camera.ProcessKeyboard(RIGHT, deltaTime);
-        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-            camera.ProcessKeyboard(UP, deltaTime);
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-            camera.ProcessKeyboard(DOWN, deltaTime);
-        if (ProcessKeyTap(GLFW_KEY_R, window))
+        // ProcessCameraInput(window, deltaTime);
+        ProcessPlayerInput(window, deltaTime);
+
+        if (isKeyTapped(GLFW_KEY_R, window))
         {
             ResourceManager::RecompileShaders();
             game.ShaderStaticData(renderer);
         }
-        if (ProcessKeyTap(GLFW_KEY_P, window))
+        if (isKeyTapped(GLFW_KEY_P, window))
         {
             GLint polygonMode;
             glGetIntegerv(GL_POLYGON_MODE, &polygonMode);
@@ -442,11 +465,11 @@ void ProcessInput(GLFWwindow *window, float deltaTime, Renderer *renderer)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
 
-        if (ProcessKeyTap(GLFW_KEY_SPACE, window))
+        if (isKeyTapped(GLFW_KEY_SPACE, window))
         {
         }
     }
-    if (ProcessKeyTap(GLFW_KEY_F1, window))
+    if (isKeyTapped(GLFW_KEY_F1, window))
     {
         GLint status;
         status = glfwGetInputMode(window, GLFW_CURSOR);
@@ -482,7 +505,8 @@ void MouseCallback(GLFWwindow *window, double xpos, double ypos)
         dx *= camera.MouseSensitivity;
         dy *= camera.MouseSensitivity;
 
-        camera.ProcessMouseMovement(dx, dy, true);
+        camera.ProcessMouseMovement(dx, dy);
+        game.ProcessMouseMovement(dx, dy, camera, registry);
     }
 }
 

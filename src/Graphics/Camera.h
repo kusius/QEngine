@@ -7,7 +7,7 @@
 #include <vector>
 // Defines several possible options for camera movement. Used as abstraction to
 // stay away from window-system specific input methods
-enum Camera_Movement
+enum CameraMovement
 {
     FORWARD,
     BACKWARD,
@@ -30,11 +30,12 @@ struct Ray
 };
 
 // Default camera values
-const float YAW        = -90.0f;
-const float PITCH      = 0.0f;
-const float SPEED      = 2.5f;
-const float SENSITIVTY = 0.15f;
-const float ZOOM       = 45.0f;
+const float YAW           = -90.0f;
+const float PITCH         = 0.0f;
+const float SPEED         = 2.5f;
+const float SENSITIVTY    = 0.15f;
+const float ZOOM          = 45.0f;
+const float FOLLOW_OFFSET = 1.0f;
 
 /**
  * @brief An abstract camera class that processes input and calculates the
@@ -56,13 +57,14 @@ class Camera
     float MovementSpeed;
     float MouseSensitivity;
     float Zoom;
+    float FollowOffset;
 
     // Constructor with vectors
     Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW,
            float pitch = PITCH)
         : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED),
-          MouseSensitivity(SENSITIVTY), Zoom(ZOOM)
+          MouseSensitivity(SENSITIVTY), Zoom(ZOOM), FollowOffset(FOLLOW_OFFSET)
     {
         Position = position;
         WorldUp  = up;
@@ -75,7 +77,7 @@ class Camera
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ,
            float yaw, float pitch)
         : Front(glm::vec3(0.0f, 0.0f, -1.0f)), MovementSpeed(SPEED),
-          MouseSensitivity(SENSITIVTY), Zoom(ZOOM)
+          MouseSensitivity(SENSITIVTY), Zoom(ZOOM), FollowOffset(FOLLOW_OFFSET)
     {
         Position = glm::vec3(posX, posY, posZ);
         WorldUp  = glm::vec3(upX, upY, upZ);
@@ -101,7 +103,7 @@ class Camera
     // Processes input received from any keyboard-like input system. Accepts
     // input parameter in the form of camera defined ENUM (to abstract it from
     // windowing systems)
-    void ProcessKeyboard(Camera_Movement direction, float deltaTime)
+    void ProcessKeyboard(CameraMovement direction, float deltaTime)
     {
         float velocity = MovementSpeed * deltaTime;
         if (direction == FORWARD)
@@ -116,6 +118,13 @@ class Camera
             Position += Up * velocity;
         if (direction == DOWN)
             Position -= Up * velocity;
+    }
+
+    // Sets the position of the camera to follow a specific point
+    // like a 3rd person camera.
+    void FollowPos(const glm::vec3 &followPos)
+    {
+        Position = followPos + Front * -FollowOffset;
     }
 
     // Processes input received from a mouse input system. Expects the offset
@@ -155,7 +164,7 @@ class Camera
             Zoom = 45.0f;
     }
 
-    bool raySphereIntersection(glm::vec3 center, glm::vec3 rayWorld,
+    bool RaySphereIntersection(glm::vec3 center, glm::vec3 rayWorld,
                                float *distance = nullptr)
     {
         int distanceToClosest = INT_MAX;
@@ -186,7 +195,7 @@ class Camera
         return result;
     }
 
-    bool rayAABBIntersection(const glm::vec3 &min, const glm::vec3 &max,
+    bool RayAABBIntersection(const glm::vec3 &min, const glm::vec3 &max,
                              const Ray &r, float *distance = nullptr)
     {
         float tmin = std::numeric_limits<float>::min();
@@ -204,7 +213,7 @@ class Camera
         return tmax >= glm::max(tmin, 0.0f);
     }
 
-    Ray mouseposToRayWorld(double xpos, double ypos, int width, int height)
+    Ray MouseposToRayWorld(double xpos, double ypos, int width, int height)
     {
         // Pixels to NDC
         float xndc = (2.0 * xpos / width) - 1.0;

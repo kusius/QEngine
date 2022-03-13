@@ -8,16 +8,14 @@
 class InputManager
 {
   public:
-    //@after WindowManager
+    // @after WindowManager
     static void StartUp();
     static void Clear();
-    static bool ProcessKeyTap(GLFWwindow *window, int key_code);
+    static bool isKeyTapped(GLFWwindow *window, int key_code);
     static bool IsKeyPressed()
 
         private : InputManager()
-    {
-    }
-    // keyboard states
-    static std::map<int, GLboolean> key_states;
+                  // keyboard states
+                  static std::map<int, GLboolean> KeyStates;
 };
 #endif

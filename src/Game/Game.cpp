@@ -1,4 +1,4 @@
-#include "Levels.h"
+#include "Game.h"
 
 #include <Scene/Components.h>
 #include <Managers/EntityManager.h>
@@ -10,6 +10,8 @@ Game::Game()
     tileModelPaths[NORMAL] =
         "Assets/terrain/cobblestone_floor/cobblestone_floor.gltf";
 }
+
+entt::entity Game::GetPlayer() const { return playerEntity; }
 
 void Game::placeLevelTiles(const std::vector<std::vector<TILE_TYPE>> &level,
                            entt::registry &registry)
@@ -30,9 +32,9 @@ void Game::placeLevelTiles(const std::vector<std::vector<TILE_TYPE>> &level,
                 Render3DComponent tile =
                     EntityManager::ImportModelFromFile(tilePath.c_str());
 
-                EntityManager::TransformModel(tile, position,
-                                              glm::vec3(0.0f, 0.0f, 0.0f),
-                                              glm::vec3(0.001f));
+                EntityManager::TransformModelLocal(tile, position,
+                                                   glm::vec3(0.0f, 0.0f, 0.0f),
+                                                   glm::vec3(0.001f));
                 entt::entity entity = registry.create();
                 registry.emplace<Render3DComponent>(entity, tile);
             }
@@ -56,21 +58,73 @@ void Game::MakeLevel(Renderer *renderer, entt::registry &registry)
     lights->pointLightPositions[2] = glm::vec3(-4.0f, 2.0f, -6.0f);
     lights->pointLightPositions[3] = glm::vec3(0.0f, 0.0f, -3.0f);
 
-    EntityManager::Reset();
+    EntityManager::Clear();
+    registry.clear();
     placeLevelTiles(Game::level1, registry);
 
     // Place player
     Render3DComponent player = EntityManager::ImportModelFromFile(
-        "Assets/primitives/3d/cube/scene.gltf", "cube");
-    EntityManager::TransformModel(player, glm::vec3(0.0f, 0.0f, 0.0f),
-                                  glm::vec3(-90.0f, 0.0f, 90.0f),
-                                  glm::vec3(0.1f, 0.1f, 0.2f));
+        "Assets/primitives/3d/cube/cube_b.gltf", "cube");
+    EntityManager::TransformModelLocal(player, glm::vec3(0.0f, 0.0f, 0.0f),
+                                       glm::vec3(0.0f, 0.0f, 0.0f),
+                                       10.0f * glm::vec3(1.0f, 1.0f, 1.0f));
 
     entt::entity entity = registry.create();
     registry.emplace<Render3DComponent>(entity, player);
+    this->playerEntity = entity;
 
     renderer->SetupShaderData();
     ShaderStaticData(renderer);
+}
+
+const float movementSpeed = 2.0f;
+void Game::ProcessKeyboard(CameraMovement movement, float deltaTime,
+                           const entt::registry &registry)
+{
+    const float velocity     = movementSpeed * deltaTime;
+    auto *gos                = &EntityManager::gameObjects;
+    Render3DComponent player = registry.get<Render3DComponent>(playerEntity);
+    glm::vec3 moveAxis       = glm::vec3(0.0f);
+
+    switch (movement)
+    {
+    case FORWARD:
+    {
+        moveAxis = glm::vec3(1.0f, 0.0f, 0.0f);
+    }
+    break;
+    case BACKWARD:
+    {
+        moveAxis = glm::vec3(-1.0f, 0.0f, 0.0f);
+    }
+    break;
+    case LEFT:
+    {
+        moveAxis = glm::vec3(0.0f, 0.0f, -1.0f);
+    }
+    break;
+    case RIGHT:
+    {
+        moveAxis = glm::vec3(0.0f, 0.0f, 1.0f);
+    }
+    break;
+    };
+
+    EntityManager::TransformModelWorld(player, velocity * moveAxis);
+}
+
+void Game::ProcessMouseMovement(const float &dx, const float &dy,
+                                const Camera &camera,
+                                const entt::registry &registry)
+{
+    // Render3DComponent player = registry.get<Render3DComponent>(playerEntity);
+    // glm::vec3 scale          = EntityManager::GetScale(player);
+    // scale.z                  = -scale.z;
+    // scale.y                  = 0;
+
+    // glm::vec3 centerPosition = EntityManager::GetPosition(player) + scale;
+
+    // EntityManager::RotateAroundAxis(player, camera.WorldUp, -dx);
 }
 
 const float rotateSpeed = 10.0f;

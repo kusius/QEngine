@@ -21,7 +21,7 @@ class EntityManager
     static std::vector<glm::vec3> GetAABBVertices(const BoundingBox &bbox);
 
     // Initialize the EntityManager class.
-    static void Reset();
+    static void Clear();
 
     /**
      * @brief Import a model from path, give a new ID and store in gameObjects
@@ -46,7 +46,7 @@ class EntityManager
 
     /**
      * @brief Transform one of the models stored in EntityManager::gameObjects
-     * SOA
+     * SOA. Inputs given in world coordinates
      *
      * @param id The unique id given to the object on import ( @ref
      * EntityManager::ImportModelFromFile )
@@ -55,14 +55,28 @@ class EntityManager
      * @param scale the amount to scale as a percentage of the original scale
      * in x, y, z
      */
-    static void TransformModel(Render3DComponent &go, glm::vec3 move,
-                               glm::vec3 rotation = glm::vec3(0.0),
-                               glm::vec3 scale    = glm::vec3(1.0));
+    static void TransformModelLocal(const Render3DComponent &go, glm::vec3 move,
+                                    glm::vec3 rotation = glm::vec3(0.0f),
+                                    glm::vec3 scale    = glm::vec3(1.0f));
+
+    static void TransformModelWorld(const Render3DComponent &go, glm::vec3 move,
+                                    glm::vec3 rotation = glm::vec3(0.0f),
+                                    glm::vec3 scale    = glm::vec3(1.0f));
 
     static void EntityManager::TransformTerrainTile(Render3DComponent go,
                                                     glm::vec3 move,
                                                     glm::vec3 rotation,
                                                     glm::vec3 scale);
+    static void EntityManager::RotateAroundAxis(const Render3DComponent &go,
+                                                const glm::vec3 &axis,
+                                                const float degrees);
+
+    static glm::vec3 GetPosition(const Render3DComponent &go);
+    static glm::quat GetRotation(const Render3DComponent &go);
+    static glm::vec3 GetScale(const Render3DComponent &go);
+
+    // Get forward vector of a GameObject
+    static glm::vec3 GetForwardVector(const Render3DComponent &go);
     // Translate a GameObject
     static void Translate(unsigned int id, glm::vec3 translation);
     // Rotate a GameObject
