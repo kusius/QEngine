@@ -29,8 +29,7 @@ class Game
     void ProcessKeyboard(CameraMovement movement, float deltaTime,
                          const entt::registry &registry);
     entt::entity GetPlayer() const;
-    void ProcessMouseMovement(const float &dx, const float &dy,
-                              const Camera &camera,
+    void ProcessMouseMovement(float dx, float dy, const Camera &camera,
                               const entt::registry &registry);
 
   private:

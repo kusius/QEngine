@@ -121,7 +121,8 @@ class Camera
     }
 
     // Sets the position of the camera to follow a specific point
-    // like a 3rd person camera.
+    // like a 3rd person camera
+    // TODO: Follow offset based on followed object scale!
     void FollowPos(const glm::vec3 &followPos)
     {
         Position = followPos + Front * -FollowOffset;

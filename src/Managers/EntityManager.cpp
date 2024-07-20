@@ -190,14 +190,26 @@ void EntityManager::TransformModelWorld(const Render3DComponent &go,
     *current = transform * (*current);
 }
 
-void EntityManager::RotateAroundAxis(const Render3DComponent &go,
-                                     const glm::vec3 &axis, const float degrees)
+void EntityManager::RotateAroundAxisWorld(const Render3DComponent &go,
+                                          const glm::vec3 &axis,
+                                          const float degrees)
 {
     glm::mat4 transform = glm::mat4(1.0f);
     transform           = glm::rotate(transform, glm::radians(degrees), axis);
     glm::mat4 *current  = &EntityManager::gameObjects
                               .modelMatrices[go.modelIndex][go.instanceIndex];
     *current = transform * (*current);
+}
+
+void EntityManager::RotateAroundAxisLocal(const Render3DComponent &go,
+                                          const glm::vec3 &axis,
+                                          const float degrees)
+{
+    glm::mat4 transform = glm::mat4(1.0f);
+    transform           = glm::rotate(transform, glm::radians(degrees), axis);
+    glm::mat4 *current  = &EntityManager::gameObjects
+                              .modelMatrices[go.modelIndex][go.instanceIndex];
+    *current = (*current) * transform;
 }
 
 glm::vec3 EntityManager::GetPosition(const Render3DComponent &go)

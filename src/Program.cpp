@@ -288,15 +288,14 @@ int main(int argc, char **argv)
 
         camera.FollowPos(playerPosition);
 
-        glm::vec3 scale = EntityManager::GetScale(player);
-        scale.z         = -scale.z;
-        scale.y         = 0;
+        // glm::vec3 scale = EntityManager::GetScale(player);
+        // scale.z         = -scale.z;
+        // scale.y         = 0;
 
-        glm::vec3 centerPosition = playerPosition;
+        // glm::vec3 centerPosition = playerPosition;
 
-        EntityManager::RotateAroundAxis(
-            player, centerPosition + glm::vec3(0.0f, 1.0f, 0.0f),
-            15 * deltaTime);
+        // EntityManager::RotateAroundAxisLocal(
+        //     player, glm::vec3(0.0f, 1.0f, 0.0f), 15 * deltaTime);
 
         projection = glm::perspective(glm::radians(camera.Zoom),
                                       (float)screenWidth / (float)screenHeight,
@@ -502,9 +501,6 @@ void MouseCallback(GLFWwindow *window, double xpos, double ypos)
 
     if (mouseAffectsCamera)
     {
-        dx *= camera.MouseSensitivity;
-        dy *= camera.MouseSensitivity;
-
         camera.ProcessMouseMovement(dx, dy);
         game.ProcessMouseMovement(dx, dy, camera, registry);
     }

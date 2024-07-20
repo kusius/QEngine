@@ -333,9 +333,9 @@ void Renderer::DrawGameObjects()
 
             meshIndex++;
         }
+        glActiveTexture(GL_TEXTURE0);
     }
     glBindVertexArray(0);
-    glActiveTexture(GL_TEXTURE0);
 }
 
 void Renderer::DrawBoundingBoxes()

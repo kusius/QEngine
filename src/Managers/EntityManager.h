@@ -67,9 +67,15 @@ class EntityManager
                                                     glm::vec3 move,
                                                     glm::vec3 rotation,
                                                     glm::vec3 scale);
-    static void EntityManager::RotateAroundAxis(const Render3DComponent &go,
-                                                const glm::vec3 &axis,
-                                                const float degrees);
+    static void
+    EntityManager::RotateAroundAxisWorld(const Render3DComponent &go,
+                                         const glm::vec3 &axis,
+                                         const float degrees);
+
+    static void
+    EntityManager::RotateAroundAxisLocal(const Render3DComponent &go,
+                                         const glm::vec3 &axis,
+                                         const float degrees);
 
     static glm::vec3 GetPosition(const Render3DComponent &go);
     static glm::quat GetRotation(const Render3DComponent &go);

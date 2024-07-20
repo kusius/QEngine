@@ -64,10 +64,13 @@ void Game::MakeLevel(Renderer *renderer, entt::registry &registry)
 
     // Place player
     Render3DComponent player = EntityManager::ImportModelFromFile(
-        "Assets/primitives/3d/cube/cube_b.gltf", "cube");
-    EntityManager::TransformModelLocal(player, glm::vec3(0.0f, 0.0f, 0.0f),
-                                       glm::vec3(0.0f, 0.0f, 0.0f),
-                                       10.0f * glm::vec3(1.0f, 1.0f, 1.0f));
+        "Assets/primitives/3d/cube/scene.gltf", "cube");
+    float playerScaleFactor = 0.1f;
+
+    EntityManager::TransformModelWorld(
+        player, glm::vec3(0.0f, playerScaleFactor, 0.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        playerScaleFactor * glm::vec3(1.0f, 1.0f, 1.0f));
 
     entt::entity entity = registry.create();
     registry.emplace<Render3DComponent>(entity, player);
@@ -113,18 +116,44 @@ void Game::ProcessKeyboard(CameraMovement movement, float deltaTime,
     EntityManager::TransformModelWorld(player, velocity * moveAxis);
 }
 
-void Game::ProcessMouseMovement(const float &dx, const float &dy,
-                                const Camera &camera,
+float angleBetweenInRadians(const glm::vec3 &vectorA, const glm::vec3 vectorB,
+                            glm::vec3 origin)
+{
+    glm::vec3 da = glm::normalize(vectorA - origin);
+    glm::vec3 db = glm::normalize(vectorB - origin);
+    return glm::acos(glm::dot(da, db));
+}
+
+float angleBetweenInRadians(const glm::quat &vectorA, const glm::quat &vectorB)
+{
+    // glm::quat inv = vectorA;
+    // inv           = glm::inverse(inv);
+
+    // return inv * vectorB;
+    return glm::dot(vectorA, vectorB);
+}
+
+void Game::ProcessMouseMovement(float dx, float dy, const Camera &camera,
                                 const entt::registry &registry)
 {
-    // Render3DComponent player = registry.get<Render3DComponent>(playerEntity);
-    // glm::vec3 scale          = EntityManager::GetScale(player);
-    // scale.z                  = -scale.z;
-    // scale.y                  = 0;
+    Render3DComponent player = registry.get<Render3DComponent>(playerEntity);
 
-    // glm::vec3 centerPosition = EntityManager::GetPosition(player) + scale;
+    glm::quat playerRotation = EntityManager::GetRotation(player);
+    glm::quat cameraRotation = glm::vec3(0.0f, camera.Yaw, 0.0f);
 
-    // EntityManager::RotateAroundAxis(player, camera.WorldUp, -dx);
+    float angleToRotate = angleBetweenInRadians(glm::normalize(playerRotation),
+                                                glm::normalize(cameraRotation));
+
+    // std::cout << "Rotating: " << angleToRotate.x << ", " << angleToRotate.y
+    //           << ", " << angleToRotate.z << ", " << angleToRotate.w
+    //           << std::endl;
+
+    // std::cout << "Camera rotation: " << cameraRotation.y << std::endl;
+    std::cout << "Angle Between: " << angleToRotate << std::endl;
+
+    dx *= camera.MouseSensitivity;
+
+    EntityManager::RotateAroundAxisLocal(player, camera.WorldUp, dx);
 }
 
 const float rotateSpeed = 10.0f;
